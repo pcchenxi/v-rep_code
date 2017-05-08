@@ -101,7 +101,7 @@ sample_state=function(robot_hd, joint_hds, start_state, distance)
     sample_ori[3] = torch.normal(start_state[6], 0.05)
     sample_ori[4] = start_state[7]
 
-    set_robot_pose(robot_hd, sample_pose, sample_ori)
+    set_robot_body(robot_hd, sample_pose, sample_ori)
 
     marker_knee = simGetObjectHandle('temp_knee')
     marker_foot = simGetObjectHandle('temp_foot')
@@ -119,7 +119,7 @@ sample_state=function(robot_hd, joint_hds, start_state, distance)
     
     if found_pose == 0 then
         -- sampled_state = start_state
-        -- set_robot_pose(robot_hd, startpos, startorient)
+        -- set_robot_body(robot_hd, startpos, startorient)
         -- set_joint_positions(joint_hds, startconfigs)
         local r = simExtOMPL_writeState(_callback_task_hd, start_state)
     end

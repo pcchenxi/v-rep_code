@@ -5,6 +5,12 @@ function sleep(s)
   repeat until os.clock() > ntime
 end
 
+function print_table(table)
+    for i=1, #table, 1 do
+        print(table[i]..' ')
+    end
+end
+
 displayInfo=function(txt)
     if dlgHandle then
         simEndDialog(dlgHandle)
@@ -35,3 +41,4 @@ forbidThreadSwitches=function(forbid)
         end
     end
 end
+

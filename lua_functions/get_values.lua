@@ -10,7 +10,7 @@ end
 
 
 get_joint_positions=function(joint_hds, num)
-    if num == -1 then
+    if num == -1 or num == nil then
         num = #joint_hds
     end
 

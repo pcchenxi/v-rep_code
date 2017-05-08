@@ -23,7 +23,12 @@ get_joint_hds=function()
     local hd4_3=simGetObjectHandle('rw_joint4#1')
     local hd4_4=simGetObjectHandle('rw_joint4#2')
 
-    joint_hds={hd1_1,hd1_2,hd1_3,hd1_4, hd2_1,hd2_2,hd2_3,hd2_4, hd3_1,hd3_2,hd3_3,hd3_4, hd4_1,hd4_2,hd4_3,hd4_4}
+    local hd5_1=simGetObjectHandle('rw_freeJoint')
+    local hd5_2=simGetObjectHandle('rw_freeJoint#0')
+    local hd5_3=simGetObjectHandle('rw_freeJoint#1')
+    local hd5_4=simGetObjectHandle('rw_freeJoint#2')
+
+    joint_hds={hd1_1,hd1_2,hd1_3,hd1_4, hd2_1,hd2_2,hd2_3,hd2_4, hd3_1,hd3_2,hd3_3,hd3_4, hd4_1,hd4_2,hd4_3,hd4_4, hd5_1,hd5_2,hd5_3,hd5_4}
     return joint_hds
 end
 
