@@ -73,7 +73,7 @@ sample_callback = function()
 
     -- sleep(3)
     --simSwitchThread()
-    return state
+    return sampled_state
 end
 
 sampleNear_callback = function(state, distance)
