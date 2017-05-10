@@ -31,8 +31,8 @@ init_statespace=function(robot_hd, joint_hds, start_pose, goal_pose)
     local min_x = -0.5
     local max_x = 0.5
 
-    local min_z = 0.1
-    local max_z = 0.26
+    local min_z = start_pose[3] - 0.1
+    local max_z = start_pose[3] + 0.1
 
     if _robot_dim == 1 then
         min_range={min_x,min_y}
@@ -111,7 +111,10 @@ init_task=function(start_name, task_id)
         _callback_state_dim = _state_dim
         _callback_init_config = get_joint_positions(joint_hds, _joint_dim)
 
-        local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_callback', 'sampleNear_callback')        
+        pose_gen = Pose_Generator:new()
+        pose_gen:init_pose_list()
+        _pose_generator = pose_gen
+        local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')        
         -- displayInfo('use callback '..#_path)
 
     end

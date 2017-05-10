@@ -2,6 +2,8 @@ package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/?.lua
 require("get_values")
 require("set_values")
 require("get_handles")
+require("robot_pose_generator")
+
 local torch = require 'torch'
 
 _callback_task_hd=nil
@@ -19,11 +21,65 @@ _callback_state_dim = 3
 _callback_path = nil
 _callback_path_index = 1
 
+_pose_generator = nil
+
 test = 0
+
+_init = false
+_check_path={}
 
 type = 1
 g_index = 0
 sampled_states={}
+
+sample_from_collection = function()
+    print('sample state')
+    --forbidThreadSwitches(true)
+    local state = {}
+    -- if type == 1 then 
+    local dim = 3
+    local path_length = #_callback_path/dim
+
+    if not _init then
+        for i=1, path_length, 1 do
+            _check_path[i] = 0 
+        end
+        _init = true
+    end
+
+    local pose_index = math.random(0, path_length-1)
+
+    pose_index = get_nearest_index(_check_path, pose_index)
+
+    local index =  pose_index * dim
+
+    local pose_collection_size = #_pose_generator.pose_list
+    local pose_collection_index = math.random(pose_collection_size)
+
+    print('collection size: '..pose_collection_size..' index: '..pose_collection_index)
+
+    state = _pose_generator.pose_list[pose_collection_index]
+    state[1] = _callback_path[index + 1]
+    state[2] = _callback_path[index + 2]
+
+    local distance = 0.2
+    local sample_pose = {}
+    state[1] = torch.normal(state[1], distance)
+    state[2] = torch.normal(state[2], distance)    
+    -- state[3] = torch.normal(state[3]+0.0, 0.06)    
+
+    -- local sample_ori = {}
+    -- sample_ori[1] = torch.normal(start_state[4], 0.04)
+    -- sample_ori[2] = torch.normal(start_state[5], 0.04)    
+    -- sample_ori[3] = torch.normal(start_state[6], 0.05)
+    -- sample_ori[4] = start_state[7]
+
+    if stateValidation(state) then 
+        _check_path[pose_index] = 1
+    end
+
+    return state
+end
 
 sample_callback = function()
     --forbidThreadSwitches(true)
@@ -78,13 +134,29 @@ end
 
 sampleNear_callback = function(state, distance)
     -- test = 1
-    -- displayInfo('in sample near!!!!!!!!!!!!!!!! ')
+    displayInfo('in sample near!!!!!!!!!!!!!!!! ')
 
-    -- local found_pose, sampled_state = sample_state(_callback_robot_hd, _callback_joint_hds, state, distance)
+    local found_pose, sampled_state = sample_state(_callback_robot_hd, _callback_joint_hds, state, distance)
         
     return state
 end
 
+get_nearest_index = function(list, index)
+    for i = index, #list-1, 1 do
+        if list[i] == 0 then
+            print(i..' '..index)
+            return i
+        end
+    end
+
+    for i = index, 1, -1 do
+        if list[i] == 0 then
+            print(i..' '..index)
+            return i
+        end
+    end
+    return index
+end
 
 sample_state=function(robot_hd, joint_hds, start_state, distance)
     local pan_hds = get_leg_pan_hds()

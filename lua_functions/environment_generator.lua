@@ -10,14 +10,14 @@ function Environment_Generator:new()
     local this =
     {
         name = "Environment_Generator",
-        obs_prob = 0.98,
+        obs_prob = 0.9,
 
         max_obs_h = 0.5,
         
         min_x = -0.4,
         max_x = 0.4,
 
-        resolution = 0.05,
+        resolution = 0.15,
 
         max_y = 0.4,
         min_y = -0.4,

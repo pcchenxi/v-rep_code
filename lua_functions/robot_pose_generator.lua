@@ -12,8 +12,9 @@ function Pose_Generator:new()
         name = "Pose_Generator",
 
         pose_list = {},
-        angle_list = {-80, -45, 0, 45, 80},
-        knee_list = {-80, -45, 0, 45, 80},
+
+        angle_list = {}, --{-80, -45, 0, 45, 80},
+        angle_resolution = 70,
 
         robot_hd = simGetObjectHandle('rwRobot'),
         joint_hds = get_joint_hds(),
@@ -37,16 +38,24 @@ function Pose_Generator:get_leg_collection_hds()
     local hd4 = simGetCollectionHandle('leg#2')
 
     self.leg_hds = {hd1, hd2, hd3, hd4}
-    print('body down '..hd3)
 
 end
 
 function Pose_Generator:init_pose_list()
+    local current_pose = self:read_current_pose()
+
     self:get_leg_collection_hds()
+
+    for i=-80, 80, self.angle_resolution do 
+        self.angle_list[#self.angle_list+1] = i
+        print(i)
+    end
+
+    print('angle list size: '..#self.angle_list)
 
     for i=1, #self.angle_list, 1 do
         for j=1, #self.angle_list, 1 do 
-            for k=1, #self.knee_list, 1 do 
+            for k=1, #self.angle_list, 1 do 
                 local state = self:get_one_pose(i, j, k)
                 -- sleep(1)
                 -- simSwitchThread()
@@ -57,7 +66,9 @@ function Pose_Generator:init_pose_list()
     end
 
     print('valid pose: '..#self.pose_list)
-    self:view_pose_list()
+    -- local state = self.pose_list[32]
+    self:render_pose(current_pose)
+    -- self:view_pose_list()
 end
 
 function Pose_Generator:view_pose_list()
@@ -83,11 +94,6 @@ function Pose_Generator:check_pose(state)
         end
     end
 
-    if is_valid then 
-        print('good pose')
-    else
-        print('Collision pose')
-    end   
     return is_valid
 
 end
@@ -109,7 +115,7 @@ function Pose_Generator:generate_one_pose(index_ori, index_tilt, index_knee)
     local current_state = self:read_current_pose()
     local current_state = self:set_leg_ori(current_state, self.angle_list[index_ori])
     local current_state = self:set_leg_tilt(current_state, self.angle_list[index_tilt])
-    local current_state = self:set_leg_knee(current_state, self.knee_list[index_knee])
+    local current_state = self:set_leg_knee(current_state, self.angle_list[index_knee])
 
     return current_state
 end

@@ -1,6 +1,7 @@
 package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/?.lua"
-require("ompl_callbacks")
 require("common_functions")
+require("ompl_callbacks")
+
 
 OMPL_Processor = {}
 OMPL_Processor.__index = OMPL_Processor
@@ -37,6 +38,47 @@ function OMPL_Processor:new(robot_dim, joint_dim)
     return this
 end
 
+
+
+function OMPL_Processor:stateValidation(state)
+    -- displayInfo('in stateValidation ')
+
+    -- Read the current state:
+    --local res, current_state = simExtOMPL_readState(_task_hd)
+    --_sample_num = _sample_num+1
+
+    local r = simExtOMPL_writeState(_callback_task_hd, state)
+    local pass=false
+    
+    -- check if the foot is on the ground
+    local isOnGround = true
+    foot_pos = get_foottip_positions(_callback_foot_hds)
+    for i=1,#foot_pos,1 do
+        local pos = foot_pos[i]
+        if pos[3] > 0.03 then
+            isOnGround = false
+            break
+        end
+    end
+
+    if isOnGround then
+        local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
+        --local res, dist = simCheckDistance(simGetCollectionHandle('robot_body'),simGetCollectionHandle('obstacles'),0.02)
+        if res == 0 then
+            pass=true
+            --_valid_num = _valid_num+1
+        end
+    end
+    --res = simExtOMPL_writeState(_task_hd, current_state)
+    -- sleep(2)
+    -- simSwitchThread()
+    --displayInfo('callback: '..test)
+
+    -- Return whether the tested state is valid or not:
+    return pass
+end
+
+
 function OMPL_Processor:init_task(start_name, target_name, task_id)
     if start_name ~= nil then
         print(start_name)
@@ -51,24 +93,26 @@ function OMPL_Processor:init_task(start_name, target_name, task_id)
 
     ------ callbacks ---------------
     --simExtOMPL_setGoalCallback(t, 'goalSatisfied')
-    -- if self.use_validation_callback then
-    --     _callback_collision_hd_1 = _collision_hd_1
-    --     _callback_collision_hd_2 = _collision_hd_2
-    --     _callback_foot_hds = get_foot_tip_hds()
-    --     simExtOMPL_setStateValidationCallback(self.task_hd, 'stateValidation')
-    -- end
+    print('valication: '..tostring(self.use_validation_callback)..' sampler: '..tostring(self.use_validation_callback))
+    if self.use_validation_callback then
+        _callback_collision_hd_1 = simGetCollectionHandle(self.collision_name_1)
+        _callback_collision_hd_2 = simGetCollectionHandle(self.collision_name_2)
+        _callback_foot_hds = get_foot_tip_hds()
+        _callback_task_hd = self.task_hd
+        local res = simExtOMPL_setStateValidationCallback(self.task_hd, 'stateValidation')
+    end
 
-    -- if self.use_sampler_callback then 
-    --     _callback_joint_hds = joint_hds
-    --     _callback_robot_hd = robot_hd
-    --     _callback_path = _path
-    --     _callback_state_dim = _state_dim
-    --     _callback_init_config = get_joint_positions(joint_hds, _joint_dim)
+    if self.use_sampler_callback then 
+        _callback_joint_hds = joint_hds
+        _callback_robot_hd = robot_hd
+        _callback_path = self.path
+        _callback_state_dim = self.state_dim
+        _callback_init_config = get_joint_positions(joint_hds, self.joint_dim)
 
-    --     local r = simExtOMPL_setValidStateSamplerCallback(self.task_hd, 'sample_callback', 'sampleNear_callback')        
-    --     -- displayInfo('use callback '..#_path)
+        local r = simExtOMPL_setValidStateSamplerCallback(self.task_hd, 'sample_callback', 'sampleNear_callback')        
+        -- displayInfo('use callback '..#_path)
 
-    -- end
+    end
 
     -- start pose --
     local startpose=get_robot_pose(robot_hd, joint_hds, self.robot_dim, self.joint_dim)
