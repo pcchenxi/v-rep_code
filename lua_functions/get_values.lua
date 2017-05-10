@@ -39,6 +39,11 @@ get_robot_pose=function(robot_hd, joint_hds, robot_dim, joint_dim)
         pose[1]=startpos[1] -- x
         pose[2]=startpos[2] -- y
         pose[3]=startpos[3] -- z
+    elseif robot_dim == 4 then
+        pose[1]=startpos[1] -- x
+        pose[2]=startpos[2] -- y
+        pose[3]=startpos[3] -- z
+        pose[4]=startorient[3] -- yaw
     elseif robot_dim == 6 then
         pose[1]=startpos[1] -- x
         pose[2]=startpos[2] -- y

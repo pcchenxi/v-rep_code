@@ -49,6 +49,17 @@ init_statespace=function(robot_hd, joint_hds, start_pose, goal_pose)
         max_range={max_x,max_y, max_z}
         local weight_move = 3
         state_spaces[1]=simExtOMPL_createStateSpace('base_space',sim_ompl_statespacetype_position3d,robot_hd,min_range,max_range,weight_move)               -- base space
+    elseif _robot_dim == 4 then
+        min_range={min_x,min_y, min_z}
+        max_range={max_x,max_y, max_z}
+        local weight_move = 3
+        state_spaces[1]=simExtOMPL_createStateSpace('base_space',sim_ompl_statespacetype_position3d,robot_hd,min_range,max_range,weight_move)               -- base space
+
+        local yaw_hd = simGetObjectHandle('base_yaw')        
+        min_v = {0*math.pi/180}
+        max_v = {90*math.pi/180}
+        state_spaces[2]=simExtOMPL_createStateSpace('base_yaw',sim_ompl_statespacetype_joint_position,yaw_hd,min_v,max_v,weight,robot_hd)
+
     elseif _robot_dim == 6 then
         min_range={min_x,min_y, min_z}
         max_range={max_x,max_y, max_z}
@@ -70,7 +81,7 @@ init_statespace=function(robot_hd, joint_hds, start_pose, goal_pose)
             max_v = {90*math.pi/180}    --{170*math.pi/180}
             weight = 0
         end
-        state_spaces[i+1]=simExtOMPL_createStateSpace('joint'..i,sim_ompl_statespacetype_joint_position,joint_hds[i],min_v,max_v,weight,robot_hd)
+        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('joint'..i,sim_ompl_statespacetype_joint_position,joint_hds[i],min_v,max_v,weight,robot_hd)
     end
 
     return state_spaces
@@ -115,7 +126,7 @@ init_task=function(start_name, task_id)
         pose_gen:init_pose_list()
         _pose_generator = pose_gen
         local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')        
-        -- displayInfo('use callback '..#_path)
+        -- displayInfo('use callback '..#_path)  sample_from_collection
 
     end
 

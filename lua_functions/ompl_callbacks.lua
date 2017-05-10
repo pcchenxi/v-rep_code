@@ -27,58 +27,59 @@ test = 0
 
 _init = false
 _check_path={}
+_is_add_to_tree = true
+_pre_index = 0
+_pose_index = 0
 
 type = 1
 g_index = 0
 sampled_states={}
 
 sample_from_collection = function()
-    print('sample state')
     --forbidThreadSwitches(true)
     local state = {}
+    local path_state = {}
     -- if type == 1 then 
     local dim = 3
     local path_length = #_callback_path/dim
-
-    if not _init then
-        for i=1, path_length, 1 do
-            _check_path[i] = 0 
-        end
-        _init = true
-    end
-
-    local pose_index = math.random(0, path_length-1)
-
-    pose_index = get_nearest_index(_check_path, pose_index)
+    local pose_index = _pose_index%path_length
+    -- local pose_index = math.random(0, path_length-1)
 
     local index =  pose_index * dim
 
+    path_state[1] = _callback_path[index + 1]
+    path_state[2] = _callback_path[index + 2]
+    path_state[3] = _callback_path[index + 3]
+
     local pose_collection_size = #_pose_generator.pose_list
-    local pose_collection_index = math.random(pose_collection_size)
+    local candidate_pose = get_candidate_state(path_state[3], _pose_generator.pose_list)
+    local pose_collection_index = math.random(#candidate_pose)
 
-    print('collection size: '..pose_collection_size..' index: '..pose_collection_index)
-
-    state = _pose_generator.pose_list[pose_collection_index]
-    state[1] = _callback_path[index + 1]
-    state[2] = _callback_path[index + 2]
-
-    local distance = 0.2
+    local distance = 0.15
     local sample_pose = {}
-    state[1] = torch.normal(state[1], distance)
-    state[2] = torch.normal(state[2], distance)    
+    state = candidate_pose[pose_collection_index]    
+    
+    state[1] = torch.normal(path_state[1], distance)
+    state[2] = torch.normal(path_state[2], distance)    
+
     -- state[3] = torch.normal(state[3]+0.0, 0.06)    
 
-    -- local sample_ori = {}
-    -- sample_ori[1] = torch.normal(start_state[4], 0.04)
-    -- sample_ori[2] = torch.normal(start_state[5], 0.04)    
-    -- sample_ori[3] = torch.normal(start_state[6], 0.05)
-    -- sample_ori[4] = start_state[7]
+    local r = simExtOMPL_writeState(_callback_task_hd, state)
+    -- print('sample: '..state[1], state[2])
 
-    if stateValidation(state) then 
-        _check_path[pose_index] = 1
-    end
-
+    _pose_index = _pose_index+1
     return state
+end
+
+get_candidate_state = function(z, pose_list)
+    local candidate_pose={}
+    for i=1, #pose_list, 1 do
+        local diff_z = math.abs(pose_list[i][3] - z)
+        if diff_z < 0.05 then
+            candidate_pose[#candidate_pose+1] = pose_list[i]
+        end
+    end
+    return candidate_pose
 end
 
 sample_callback = function()
@@ -87,13 +88,13 @@ sample_callback = function()
     -- if type == 1 then 
     local dim = 3
     local path_length = #_callback_path/dim
-    local pose_index = math.random(0,path_length-1)
-
+    -- local pose_index = math.random(0,path_length-1)
+    local pose_index = _pose_index%path_length
     local dice = math.random()
 
     local index =  pose_index * dim
     -- displayInfo('in callback 1 '..pose_index)
-    local distance = 0.25
+    local distance = 0.05
     -- if dice > 0.5 and #sampled_states > 2 then 
     --     -- displayInfo('pose_index2 '..#sampled_states)
 
@@ -129,6 +130,8 @@ sample_callback = function()
 
     -- sleep(3)
     --simSwitchThread()
+
+    _pose_index = _pose_index+1
     return sampled_state
 end
 
@@ -165,12 +168,12 @@ sample_state=function(robot_hd, joint_hds, start_state, distance)
     local sample_pose = {}
     sample_pose[1] = torch.normal(start_state[1], distance)
     sample_pose[2] = torch.normal(start_state[2], distance)    
-    sample_pose[3] = torch.normal(start_state[3]+0.0, 0.06)    
+    sample_pose[3] = start_state[3] --torch.normal(start_state[3]+0.0, 0.06)    
 
     local sample_ori = {}
-    sample_ori[1] = torch.normal(start_state[4], 0.04)
-    sample_ori[2] = torch.normal(start_state[5], 0.04)    
-    sample_ori[3] = torch.normal(start_state[6], 0.05)
+    sample_ori[1] = start_state[4] --torch.normal(start_state[4], 0.04)
+    sample_ori[2] = start_state[5] --torch.normal(start_state[5], 0.04)    
+    sample_ori[3] = start_state[6] --torch.normal(start_state[6], 0.05)
     sample_ori[4] = start_state[7]
 
     set_robot_body(robot_hd, sample_pose, sample_ori)
@@ -283,20 +286,19 @@ stateValidation=function(state)
     -- Read the current state:
     --local res, current_state = simExtOMPL_readState(_task_hd)
     --_sample_num = _sample_num+1
-
     local r = simExtOMPL_writeState(_callback_task_hd, state)
     local pass=false
     
     -- check if the foot is on the ground
     local isOnGround = true
-    foot_pos = get_foottip_positions(_callback_foot_hds)
-    for i=1,#foot_pos,1 do
-        local pos = foot_pos[i]
-        if pos[3] > 0.03 then
-            isOnGround = false
-            break
-        end
-    end
+    -- foot_pos = get_foottip_positions(_callback_foot_hds)
+    -- for i=1,#foot_pos,1 do
+    --     local pos = foot_pos[i]
+    --     if pos[3] > 0.03 then
+    --         isOnGround = false
+    --         break
+    --     end
+    -- end
 
     if isOnGround then
         local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
@@ -307,11 +309,13 @@ stateValidation=function(state)
         end
     end
     --res = simExtOMPL_writeState(_task_hd, current_state)
-    -- sleep(2)
+    -- sleep(1)
     -- simSwitchThread()
     --displayInfo('callback: '..test)
 
     -- Return whether the tested state is valid or not:
+    -- print('stateValidation: '..state[1], state[2], tostring(pass))
+
     return pass
 end
 

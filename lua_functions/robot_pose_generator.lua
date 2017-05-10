@@ -14,7 +14,7 @@ function Pose_Generator:new()
         pose_list = {},
 
         angle_list = {}, --{-80, -45, 0, 45, 80},
-        angle_resolution = 70,
+        angle_resolution = 45,
 
         robot_hd = simGetObjectHandle('rwRobot'),
         joint_hds = get_joint_hds(),
@@ -99,30 +99,30 @@ end
 
 
 
-function Pose_Generator:point_inside_polygon(x,y,poly):
-    local n = #poly
-    local inside = false
+-- function Pose_Generator:point_inside_polygon(x,y,poly):
+--     local n = #poly
+--     local inside = false
 
-    local p1x = poly[0][0]
-    local p1y = poly[0][1]
+--     local p1x = poly[0][0]
+--     local p1y = poly[0][1]
 
-    local xinters = 0
+--     local xinters = 0
 
-    for i in range(n+1):
-        local p2x = poly[i % n][0]
-        local p2y = poly[i % n][1]
-        if y > min(p1y,p2y):
-            if y <= max(p1y,p2y):
-                if x <= max(p1x,p2x):
-                    if p1y != p2y:
-                        xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
-                    if p1x == p2x or x <= xinters:
-                        inside = not inside
-        p1x = p2x
-        p1y = p2y
+--     for i in range(n+1):
+--         local p2x = poly[i % n][0]
+--         local p2y = poly[i % n][1]
+--         if y > min(p1y,p2y):
+--             if y <= max(p1y,p2y):
+--                 if x <= max(p1x,p2x):
+--                     if p1y != p2y:
+--                         xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+--                     if p1x == p2x or x <= xinters:
+--                         inside = not inside
+--         p1x = p2x
+--         p1y = p2y
 
-    return inside
-end
+--     return inside
+-- end
 
 function Pose_Generator:get_one_pose(index_ori, index_tilt, index_knee)
     -- local index_ori = math.random(5)
