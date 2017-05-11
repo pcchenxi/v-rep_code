@@ -128,7 +128,7 @@ init_task=function(start_name, task_id)
         local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')       
         -- local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_callback', 'sampleNear_callback')       
 
-        -- simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTstar)
+        -- simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTConnect)
 
         -- displayInfo('use callback '..#_path)  sample_from_collection
 
@@ -157,9 +157,9 @@ init_task=function(start_name, task_id)
 end
 
 compute_path=function(task_hd, max_time)
-    --forbidThreadSwitches(true)
+    -- forbidThreadSwitches(true)
     r,_path=simExtOMPL_compute(task_hd, max_time, -1, 0)
-    --forbidThreadSwitches(false)
+    -- forbidThreadSwitches(false)
 
     path_step = #_path/_state_dim
     --local txt='finish compute' ..path_step
