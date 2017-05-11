@@ -138,7 +138,7 @@ sample_from_collection = function()
     -- end
     -- print('sample: '..state[1], state[2])
 
-    local distance = 0.05 + (_pose_index/path_length + 1) * 0.05
+    local distance = 0.05 + (_pose_index/path_length) * 0.05
     if distance > 0.3 then 
         distance = 0.3
     end
@@ -151,8 +151,8 @@ sample_from_collection = function()
         return state
     end
 
-    local pose_collection_index = math.random(#candidate_pose)
-    print(pose_collection_index)
+    local pose_collection_index = 1--math.random(#candidate_pose)
+    print('found sample: '..distance)
     -- state = get_state (pose_collection_index, path_state, candidate_pose, distance) 
     state = candidate_pose[pose_collection_index]   
     local r = simExtOMPL_writeState(_callback_task_hd, state)
@@ -181,16 +181,16 @@ get_state = function(path_state, state, distance)
     -- local distance = 0.05
     -- local state = pose_list[index]    
 
-    -- state[1] = torch.normal(path_state[1], distance)
-    -- state[2] = torch.normal(path_state[2], distance)   
-    -- -- state[3] = torch.normal(path_state[3], distance)    
-    -- state[6] = torch.normal(path_state[4], distance/2)
-
-    local rand_x = math.random()
-    local rand_y = math.random()
-    state[1] = path_state[1] + (rand_x-0.5)*distance*2
-    state[2] = path_state[2] + (rand_y-0.5)*distance*2
+    state[1] = torch.normal(path_state[1], distance)
+    state[2] = torch.normal(path_state[2], distance)   
+    -- state[3] = torch.normal(path_state[3], distance)    
     state[6] = torch.normal(path_state[4], distance/2)
+
+    -- local rand_x = math.random()
+    -- local rand_y = math.random()
+    -- state[1] = path_state[1] + (rand_x-0.5)*distance*2
+    -- state[2] = path_state[2] + (rand_y-0.5)*distance*2
+    -- state[6] = torch.normal(path_state[4], distance/2)
 
     return state
 end
@@ -200,11 +200,11 @@ get_candidate_states = function(pose_list, path_state, distance)
 
     local candidate_pose={}
     for i=1, #pose_list, 1 do
-        local diff_z = pose_list[i][3] - path_state[3] --math.abs(pose_list[i][3] - z)
-        if diff_z > 0 then --and diff_z < 0.15 then
-            -- candidate_pose[#candidate_pose+1] = pose_list[i]
-            state = get_state (path_state, pose_list[i], distance)    
+        state = get_state (path_state, pose_list[i], distance)    
 
+        local diff_z = math.abs(pose_list[i][3] - state[3])
+        if diff_z < 0.1 then
+            -- candidate_pose[#candidate_pose+1] = pose_list[i]
             local r = simExtOMPL_writeState(_callback_task_hd, state)
             local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
             if res == 0 then 
@@ -459,6 +459,11 @@ stateValidation=function(state)
         _failed_state = state
     end
     return pass
+end
+
+
+motionValidation=function(state_tree, state, valid)
+     return true
 end
 
 

@@ -106,6 +106,8 @@ init_task=function(start_name, task_id)
     simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTConnect)
 
     ------ callbacks ---------------\
+    simExtOMPL_setMotionValidationCallback(task_hd, 'motionValidation')
+
     simExtOMPL_setGoalCallback(task_hd, 'goalSatisfied')
     _callback_task_hd = task_hd
     _callback_collision_hd_1 = _collision_hd_1
@@ -126,6 +128,7 @@ init_task=function(start_name, task_id)
         pose_gen:init_pose_list()
         _pose_generator = pose_gen
         local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')       
+
         -- local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_callback', 'sampleNear_callback')       
 
         -- simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTConnect)
