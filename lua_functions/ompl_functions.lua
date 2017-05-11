@@ -105,12 +105,12 @@ init_task=function(start_name, task_id)
     -- simExtOMPL_setVerboseLevel(task_hd, 3)
     simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTConnect)
 
-    ------ callbacks ---------------
-    --simExtOMPL_setGoalCallback(t, 'goalSatisfied')
+    ------ callbacks ---------------\
+    simExtOMPL_setGoalCallback(task_hd, 'goalSatisfied')
     _callback_task_hd = task_hd
+    _callback_collision_hd_1 = _collision_hd_1
+    _callback_collision_hd_2 = _collision_hd_2    
     if _use_validation_callback then
-        _callback_collision_hd_1 = _collision_hd_1
-        _callback_collision_hd_2 = _collision_hd_2
         _callback_foot_hds = get_foot_tip_hds()
         simExtOMPL_setStateValidationCallback(task_hd, 'stateValidation')
     end
@@ -126,7 +126,10 @@ init_task=function(start_name, task_id)
         pose_gen:init_pose_list()
         _pose_generator = pose_gen
         local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')       
- 
+        -- local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_callback', 'sampleNear_callback')       
+
+        -- simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTstar)
+
         -- displayInfo('use callback '..#_path)  sample_from_collection
 
     end
@@ -136,6 +139,9 @@ init_task=function(start_name, task_id)
     -- target pose --
     local goalpose=get_robot_pose(target_hd, joint_hds, _robot_dim, _joint_dim)
     _state_dim = #startpose
+    _callback_start = startpose
+    _callback_goal = goalpose
+
     satat_spaces=init_statespace(robot_hd, joint_hds, startpose, goalpose) -- for sample state
     simExtOMPL_setStateSpace(task_hd, satat_spaces)
 

@@ -20,7 +20,8 @@ _callback_state_dim = 3
 
 _callback_path = nil
 _callback_path_index = 1
-
+_callback_start = nil
+_callback_goal = nil
 _pose_generator = nil
 
 test = 0
@@ -29,14 +30,18 @@ _init = false
 _check_path={}
 _is_add_to_tree = true
 _pre_index = 0
-_pose_index = 0
+_pose_index = 1
 
 type = 1
 g_index = 0
 sampled_states={}
 
 sample_from_collection = function()
-    --forbidThreadSwitches(true)
+    -- forbidThreadSwitches(true)
+    -- if not _is_add_to_tree then
+    --     _pose_index = _pose_index -1
+    -- end
+
     local state = {}
     local path_state = {}
     -- if type == 1 then 
@@ -54,17 +59,19 @@ sample_from_collection = function()
     local pose_collection_size = #_pose_generator.pose_list
     local candidate_pose = get_candidate_states(path_state[3], _pose_generator.pose_list)
     -- local pose_collection_index = math.random(#candidate_pose)
+    
     for i=1, #candidate_pose, 1 do
-        local distance = 0.05
+        local distance = 0.15
         state = get_state (i, path_state, candidate_pose, distance)    
- 
+        -- forbidThreadSwitches(true)
         local r = simExtOMPL_writeState(_callback_task_hd, state)
         local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
 
         if res == 0 then
-            print('found sample: '..state[1], state[2])
+            print('found sample: '..i..' '..pose_index..' '..state[1], state[2], path_state[2])
             _pose_index = _pose_index+1
-
+            -- local r = simExtOMPL_writeState(_callback_task_hd, _callback_start)
+            -- forbidThreadSwitches(false)
             return state
         end
     end
@@ -74,6 +81,7 @@ sample_from_collection = function()
     state = get_state (pose_collection_index, path_state, candidate_pose, distance)    
 
     _pose_index = _pose_index+1
+    -- forbidThreadSwitches(false)
     return state
 end
 
@@ -332,7 +340,7 @@ stateValidation=function(state)
 
     -- Return whether the tested state is valid or not:
     -- print('stateValidation: '..state[1], state[2], tostring(pass))
-
+    -- _is_add_to_tree = pass
     return pass
 end
 
@@ -341,12 +349,13 @@ goalSatisfied = function(state)
     local satisfied=0
     local dist=0
     local diff={}
-    for i=1, #goalpose, 1 do
-        diff[i]=math.abs(state[i]-goalpose[i])
+    for i=1, #_callback_goal, 1 do
+        diff[i]=math.abs(state[i]-_callback_goal[i])
     end
 
-    --if diff[1] < 0.05 and diff[2] < 0.05 then
-    if state[1]-goalpos[1] < 0.1 and state[2]-goalpos[2] < 0.1 then
+    local min_dist = 0.1
+    if diff[1] < min_dist and diff[2] < min_dist then
+    -- if state[1]-_callback_goal[1] < 0.05 and state[2]-_callback_goal[2] < 0.1 then
         satisfied=1
     end
 
