@@ -562,6 +562,7 @@ struct setMotionValidationCallback_in
 {
     int taskHandle;
     std::string callback;
+    std::string callback_pre;
     setMotionValidationCallback_in();
 };
 
@@ -572,8 +573,8 @@ struct setMotionValidationCallback_out
 };
 
 void setMotionValidationCallback(SScriptCallBack *p, setMotionValidationCallback_in *in, setMotionValidationCallback_out *out);
-int setMotionValidationCallback(SScriptCallBack *p, int taskHandle, std::string callback);
-void setMotionValidationCallback(SScriptCallBack *p, setMotionValidationCallback_out *out, int taskHandle, std::string callback);
+int setMotionValidationCallback(SScriptCallBack *p, int taskHandle, std::string callback, std::string callbac_pre);
+void setMotionValidationCallback(SScriptCallBack *p, setMotionValidationCallback_out *out, int taskHandle, std::string callback, std::string callbac_pre);
 void setMotionValidationCallback_callback(SScriptCallBack *p);
 
 ////////////////////////////////////////////////

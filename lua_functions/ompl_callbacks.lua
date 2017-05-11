@@ -34,16 +34,19 @@ _pre_index = 0
 _pose_index = 1
 _failed_state = {}
 
+_min_dist = 999
+
+_near_state_count = 0
+
 type = 1
 g_index = 0
 sampled_states={}
 
 sample_from_collection = function()
     -- forbidThreadSwitches(true)
-    -- if not _is_add_to_tree then
-    --     _pose_index = _pose_index -1
-    -- end
-
+    print('_near_state_count: '.._near_state_count)
+    _near_state_count = 0
+    _min_dist = 999
     local state = {}
     local path_state = {}
     -- if type == 1 then 
@@ -92,29 +95,20 @@ sample_from_collection = function()
         state[1] = path_state[1]
         state[2] = path_state[2]
         _pose_index = _pose_index+1
+        local r = simExtOMPL_writeState(_callback_task_hd, state)
 
         return state
     end
 
     -- sample the faled state
-    -- if not _is_add_to_tree then
-    --     local diff_x = math.abs(path_state[1] - _failed_state[1])
-    --     local diff_y = math.abs(path_state[2] - _failed_state[2])
-    --     if diff_x < 0.05 and diff_y < 0.05 then
-    --         local d = 0.3
-    --         state = _failed_state
-    --         local rand_x = math.random()
-    --         local rand_y = math.random()
-    --         state[1] = _failed_state[1] + (rand_x-0.5)*d
-    --         state[2] = _failed_state[2] + (rand_y-0.5)*d  
-    --         --     -- state[3] = torch.normal(state[3]+0.0, 0.06)    
-    --         -- -- state[6] = torch.normal(_failed_state[4], 0.05)
-    --         print('sample from failed state ',(rand_x-0.5)*d, state[1], state[2])
-    --         return state
-    --     end
-    --     -- print(diff_x, diff_y)
-        
-    -- end
+    if not _is_add_to_tree then
+        _pose_index = _pose_index -1
+        if #_failed_state > 0 then
+            path_state = _failed_state
+            print(_pose_index)
+        end
+    end
+
     --------------------------------------------------
 
 
@@ -151,16 +145,18 @@ sample_from_collection = function()
         return state
     end
 
-    local pose_collection_index = 1--math.random(#candidate_pose)
-    print('found sample: '..distance)
+    local pose_collection_index = 1 --math.random(#candidate_pose)
     -- state = get_state (pose_collection_index, path_state, candidate_pose, distance) 
     state = candidate_pose[pose_collection_index]   
     local r = simExtOMPL_writeState(_callback_task_hd, state)
+    print('found sample: '..state[1]..'  '..state[2])
 
-    -- sleep(1)
+    -- sleep(3)
     -- simSwitchThread()
     _pose_index = _pose_index+1
     -- forbidThreadSwitches(false)
+
+    _is_add_to_tree = false
     return state
 end
 
@@ -215,7 +211,7 @@ get_candidate_states = function(pose_list, path_state, distance)
             end
         end
     end
-    print('candidate pose num: ', #candidate_pose, #pose_list)
+    -- print('candidate pose num: ', #candidate_pose, #pose_list)
     -- forbidThreadSwitches(false)
 
     return candidate_pose
@@ -454,16 +450,69 @@ stateValidation=function(state)
 
     -- Return whether the tested state is valid or not:
     -- print('stateValidation: '..state[1], state[2], tostring(pass))
-    _is_add_to_tree = pass
-    if not pass then 
-        _failed_state = state
-    end
+    -- _is_add_to_tree = pass
+
     return pass
 end
 
+quick_motionValidation = function(state_tree, state, valid)
+    _near_state_count = _near_state_count + 1
+
+    local check_motion = true
+
+    local diff_x = math.abs(state_tree[1] - state[1])
+    local diff_y = math.abs(state_tree[2] - state[2])
+
+    -- if diff_x > 0.3 or diff_y > 0.3 then 
+    --     check_motion = false
+    -- end
+
+    -- print('qmc '..state_tree[1]..'  '..state_tree[2]..'  '..state[1]..'  '..state[2]..'  '..tostring(check_motion))
+    -- _is_add_to_tree = tru
+    return check_motion
+end
 
 motionValidation=function(state_tree, state, valid)
-     return true
+    -- print(' mc '..state_tree[1]..'  '..state_tree[2]..'  '..state[1]..'  '..state[2]..'  '..tostring(valid))
+    
+    if valid then 
+        _is_add_to_tree = true
+        local hd1 = simGetObjectHandle('state_tree')
+        local hd2 = simGetObjectHandle('state')
+
+        local pos1={}
+        local pos2={}
+
+        for i=1, 3, 1 do
+            pos1[i] = state_tree[i]
+            pos2[i] = state[i]
+        end
+
+        simSetObjectPosition(hd1, -1, pos2)
+        -- simSetObjectPosition(hd2, -1, pos2)
+        sleep(1)
+        simSwitchThread()
+
+    else
+        local diff_x = math.abs(state_tree[1] - state[1])
+        local diff_y = math.abs(state_tree[2] - state[2])
+
+        local dist = math.sqrt(diff_x*diff_x + diff_y*diff_y)
+        
+        if dist < _min_dist then 
+            for i=1, #state, 1 do
+                _failed_state[i] = (state_tree[i] + state[i])/2
+            end
+            _min_dist = dist
+        end
+        -- else
+        --     _is_add_to_tree = true
+        --     _failed_state = {}
+        -- end 
+        -- print(dist,#_failed_state)   
+    end
+
+    return true
 end
 
 

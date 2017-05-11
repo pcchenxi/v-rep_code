@@ -184,6 +184,7 @@ struct TaskDef
         enum { DEFAULT, CLLBACK } type;
         // state validation callback:
         LuaCallbackFunction callback;
+        LuaCallbackFunction callback_pre;
     } MotionValidation;
 
     float stateValidityCheckingResolution;
@@ -957,29 +958,38 @@ public:
 
     bool checkMotion(const ob::State *s1, const ob::State *s2) const
     {
-        // simAddStatusbarMessage("motion validation:");
-        bool result = dv->checkMotion(s1, s2);
-
-        // std::cout << "Motion_Validation result:  " << result << std::endl;
-
+        bool result = false;
+        bool need_check = true;
+        /// copy input params
         motionValidationCallback_in in_args;
         motionValidationCallback_out out_args;
 
         std::vector<double> st, s;
         task->stateSpacePtr->copyToReals(st, s1);
-        task->stateSpacePtr->copyToReals(s, s1);
+        task->stateSpacePtr->copyToReals(s, s2);
 
         for (size_t i = 0; i < st.size(); i++)
             in_args.state_tree.push_back((float)st[i]);
-        for (size_t i = 0; i < st.size(); i++)
+        for (size_t i = 0; i < s.size(); i++)
             in_args.state.push_back((float)s[i]);
-        
         in_args.valid = result;
 
+        if (task->MotionValidation.type == TaskDef::MotionValidation::CLLBACK)
+        {
+            motionValidationCallback(task->MotionValidation.callback_pre.scriptId, task->MotionValidation.callback_pre.function.c_str(), &in_args, &out_args);
+            need_check = out_args.valid;
+        }    
+        // simAddStatusbarMessage("motion validation:");
 
+        if(!need_check)
+            return false;
+
+        result = dv->checkMotion(s1, s2);
+        in_args.valid = result;
+        
         // std::cout << "Motion_Validation info:  " << task->MotionValidation.callback.scriptId << "  " << task->MotionValidation.callback.function.c_str() << std::endl;
-
-        motionValidationCallback(task->MotionValidation.callback.scriptId, task->MotionValidation.callback.function.c_str(), &in_args, &out_args);
+        if (task->MotionValidation.type == TaskDef::MotionValidation::CLLBACK)
+            motionValidationCallback(task->MotionValidation.callback.scriptId, task->MotionValidation.callback.function.c_str(), &in_args, &out_args);
 
         return result;
     }
@@ -1575,6 +1585,8 @@ void setup(SScriptCallBack *p, const char *cmd, setup_in *in, setup_out *out)
         if(task->validStateSampling.type == TaskDef::ValidStateSampling::CLLBACK)
             task->stateSpacePtr->setStateSamplerAllocator(AllocTMyStateSampler);
         
+        task->spaceInformationPtr->setStateValidityCheckingResolution(0.03);
+
         task->spaceInformationPtr->setMotionValidator(ob::MotionValidatorPtr(new myMotionValidator(task->spaceInformationPtr)));
         task->spaceInformationPtr->setup();
 
@@ -1932,11 +1944,22 @@ void setMotionValidationCallback(SScriptCallBack *p, const char *cmd, setMotionV
     TaskDef *task = getTaskOrSetError(cmd, in->taskHandle);
     if (!task) return;
 
-    task->MotionValidation.type = TaskDef::MotionValidation::CLLBACK;
-    task->MotionValidation.callback.scriptId = p->scriptID;
-    task->MotionValidation.callback.function = in->callback;
-
-    std::cout << "setMotionValidationCallback: " << p->scriptID << std::endl;
+    if (in->callback == "")
+    {
+        task->MotionValidation.type = TaskDef::MotionValidation::DEFAULT;
+        task->MotionValidation.callback.scriptId = 0;
+        task->MotionValidation.callback.function = "";
+        
+    }
+    else
+    {
+        task->MotionValidation.type = TaskDef::MotionValidation::CLLBACK;
+        task->MotionValidation.callback.scriptId = p->scriptID;
+        task->MotionValidation.callback.function = in->callback;
+        task->MotionValidation.callback_pre.scriptId = p->scriptID;
+        task->MotionValidation.callback_pre.function = in->callback_pre;
+        std::cout << "setMotionValidationCallback: " << p->scriptID << std::endl;   
+    }
 
     out->result = 1;
 }

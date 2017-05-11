@@ -106,8 +106,6 @@ init_task=function(start_name, task_id)
     simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTConnect)
 
     ------ callbacks ---------------\
-    simExtOMPL_setMotionValidationCallback(task_hd, 'motionValidation')
-
     simExtOMPL_setGoalCallback(task_hd, 'goalSatisfied')
     _callback_task_hd = task_hd
     _callback_collision_hd_1 = _collision_hd_1
@@ -118,6 +116,7 @@ init_task=function(start_name, task_id)
     end
 
     if _use_sampler_callback then 
+        simExtOMPL_setMotionValidationCallback(task_hd, 'motionValidation', 'quick_motionValidation')
         _callback_joint_hds = joint_hds
         _callback_robot_hd = robot_hd
         _callback_path = _path
@@ -131,7 +130,7 @@ init_task=function(start_name, task_id)
 
         -- local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_callback', 'sampleNear_callback')       
 
-        -- simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTConnect)
+        -- simExtOMPL_setAlgorithm(task_hd,sim_ompl_algorithm_RRTstar)
 
         -- displayInfo('use callback '..#_path)  sample_from_collection
 

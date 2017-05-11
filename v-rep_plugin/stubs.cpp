@@ -3818,21 +3818,23 @@ void setMotionValidationCallback(SScriptCallBack *p, setMotionValidationCallback
     setMotionValidationCallback(p, "simExtOMPL_setMotionValidationCallback", in_args, out_args);
 }
 
-int setMotionValidationCallback(SScriptCallBack *p, int taskHandle, std::string callback)
+int setMotionValidationCallback(SScriptCallBack *p, int taskHandle, std::string callback, std::string callbackPre)
 {
     setMotionValidationCallback_in in_args;
     in_args.taskHandle = taskHandle;
     in_args.callback = callback;
+    in_args.callback_pre = callbackPre;
     setMotionValidationCallback_out out_args;
     setMotionValidationCallback(p, &in_args, &out_args);
     return out_args.result;
 }
 
-void setMotionValidationCallback(SScriptCallBack *p, setMotionValidationCallback_out *out_args, int taskHandle, std::string callback)
+void setMotionValidationCallback(SScriptCallBack *p, setMotionValidationCallback_out *out_args, int taskHandle, std::string callback, std::string callbackPre)
 {
     setMotionValidationCallback_in in_args;
     in_args.taskHandle = taskHandle;
     in_args.callback = callback;
+    in_args.callback_pre = callbackPre;
     setMotionValidationCallback(p, &in_args, out_args);
 }
 
@@ -3848,9 +3850,9 @@ void setMotionValidationCallback_callback(SScriptCallBack *p)
         // check argument count
         
         int numArgs = simGetStackSizeE(p->stackID);
-        if(numArgs < 2)
+        if(numArgs < 3)
             throw exception("too few arguments");
-        if(numArgs > 2)
+        if(numArgs > 3)
             throw exception("too many arguments");
 
         // read input arguments from stack
@@ -3888,7 +3890,21 @@ void setMotionValidationCallback_callback(SScriptCallBack *p)
             }
         }
 
-
+        if(numArgs >= 3)
+        {
+            try
+            {
+                // read input argument 3 (callbackpre) of type std::string
+                simMoveStackItemToTopE(p->stackID, 0);
+                read__std__string(p->stackID, &(in_args.callback_pre));
+            }
+            catch(std::exception& ex)
+            {
+                std::string msg = ex.what();
+                msg += " when reading input argument 3 (callback_prey)";
+                throw exception(msg);
+            }
+        }
         // clear stack
         simPopStackItemE(p->stackID, 0);
 
