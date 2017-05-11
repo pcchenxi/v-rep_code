@@ -52,26 +52,43 @@ sample_from_collection = function()
     path_state[3] = _callback_path[index + 3]
 
     local pose_collection_size = #_pose_generator.pose_list
-    local candidate_pose = get_candidate_state(path_state[3], _pose_generator.pose_list)
-    local pose_collection_index = math.random(#candidate_pose)
+    local candidate_pose = get_candidate_states(path_state[3], _pose_generator.pose_list)
+    -- local pose_collection_index = math.random(#candidate_pose)
+    for i=1, #candidate_pose, 1 do
+        local distance = 0.05
+        state = get_state (i, path_state, candidate_pose, distance)    
+ 
+        local r = simExtOMPL_writeState(_callback_task_hd, state)
+        local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
 
-    local distance = 0.15
-    local sample_pose = {}
-    state = candidate_pose[pose_collection_index]    
-    
-    state[1] = torch.normal(path_state[1], distance)
-    state[2] = torch.normal(path_state[2], distance)    
+        if res == 0 then
+            print('found sample: '..state[1], state[2])
+            _pose_index = _pose_index+1
 
-    -- state[3] = torch.normal(state[3]+0.0, 0.06)    
-
-    local r = simExtOMPL_writeState(_callback_task_hd, state)
+            return state
+        end
+    end
     -- print('sample: '..state[1], state[2])
+    local distance = 0.15
+    local pose_collection_index = math.random(#candidate_pose)
+    state = get_state (pose_collection_index, path_state, candidate_pose, distance)    
 
     _pose_index = _pose_index+1
     return state
 end
 
-get_candidate_state = function(z, pose_list)
+get_state = function(index, path_state, pose_list, distance)
+    -- local distance = 0.05
+    local state = pose_list[index]    
+
+    state[1] = torch.normal(path_state[1], distance)
+    state[2] = torch.normal(path_state[2], distance)   
+        -- state[3] = torch.normal(state[3]+0.0, 0.06)    
+
+    return state
+end
+
+get_candidate_states = function(z, pose_list)
     local candidate_pose={}
     for i=1, #pose_list, 1 do
         local diff_z = math.abs(pose_list[i][3] - z)

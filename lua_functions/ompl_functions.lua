@@ -125,7 +125,8 @@ init_task=function(start_name, task_id)
         pose_gen = Pose_Generator:new()
         pose_gen:init_pose_list()
         _pose_generator = pose_gen
-        local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')        
+        local r = simExtOMPL_setValidStateSamplerCallback(task_hd, 'sample_from_collection', 'sampleNear_callback')       
+ 
         -- displayInfo('use callback '..#_path)  sample_from_collection
 
     end
