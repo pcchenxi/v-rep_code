@@ -14,7 +14,7 @@ function Pose_Generator:new()
         pose_list = {},
 
         angle_list = {}, --{-80, -45, 0, 45, 80},
-        angle_resolution = 45,
+        angle_resolution = 50,
 
         robot_hd = simGetObjectHandle('rwRobot'),
         joint_hds = get_joint_hds(),
@@ -75,7 +75,7 @@ function Pose_Generator:view_pose_list()
     for i=1, #self.pose_list, 1 do
         local state = self.pose_list[i]
         self:render_pose(state)
-        sleep(1)
+        sleep(2)
         simSwitchThread()
     end
 end
@@ -93,6 +93,13 @@ function Pose_Generator:check_pose(state)
             is_valid = false
         end
     end
+
+    for i=9, 12, 1 do   -- check knee position
+        local knee_pos = simGetObjectPosition(self.joint_hds[i], -1)
+        if knee_pos[3] < 0.05 then    -- check body under ground
+            return false
+        end
+    end 
 
     return is_valid
 end

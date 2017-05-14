@@ -97,6 +97,7 @@ LIBRARY vrepLib; // the V-REP library that we will dynamically load and bind
 #include <ompl/base/DiscreteMotionValidator.h>
 #include "ompl/base/MotionValidator.h"
 
+#include "ompl/base/StateSampler.h"
 #include "stubs.h"
 
 namespace ob = ompl::base;
@@ -923,6 +924,8 @@ public:
     {
         throw ompl::Exception("Near valid state sampling callback " + task->validStateSampling.callbackNear.function + " returned an error");
     }
+
+    // sampler_->sampleUniformNear(state, nearState, distance);
     
   }
   virtual void sampleGaussian (ob::State *state, const ob::State *mean, const double stdDev)
@@ -934,6 +937,7 @@ public:
 protected:
   ompl::RNG rng_;
   TaskDef *task;
+  ob::StateSamplerPtr sampler_;
 };
 
 class myMotionValidator : public ob::MotionValidator

@@ -17,7 +17,7 @@ function Environment_Generator:new()
         min_x = -0.4,
         max_x = 0.4,
 
-        resolution = 0.15,
+        resolution = 0.1,
 
         max_y = 0.4,
         min_y = -0.4,
@@ -59,10 +59,12 @@ end
 function Environment_Generator:set_new_row()
 
     for x=self.min_x, self.max_x, self.resolution do
-        local rand_obs = math.random()
-        if rand_obs > self.obs_prob then
-            self:set_cell_value(x, self.max_y)
-        end 
+        if #self.object_list < 5 then
+            local rand_obs = math.random()
+            if rand_obs > self.obs_prob then
+                self:set_cell_value(x, self.max_y)
+            end 
+        end
     end
 
     print("number of object: " ..#self.object_list)

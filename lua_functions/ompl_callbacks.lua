@@ -26,31 +26,32 @@ _pose_generator = nil
 
 test = 0
 
+_matching_mode = false
+_matching_pair = {}
+_matching_index = 1
 _init = false
 _check_path={}
 _applied_path={}
 _is_add_to_tree = true
-_pre_index = 0
+
 _pose_index = 1
-_failed_state = {}
 
-_min_dist = 999
+_failed_time = 0
 
-_near_state_count = 0
+_min_dist = 0.6
 
 type = 1
 g_index = 0
 sampled_states={}
 
+_dummy_list={}
+
 sample_from_collection = function()
     -- forbidThreadSwitches(true)
-    print('_near_state_count: '.._near_state_count)
-    _near_state_count = 0
-    _min_dist = 999
     local state = {}
     local path_state = {}
     -- if type == 1 then 
-    local dim = 4
+    local dim = 3
     local path_length = #_callback_path/dim
 
     if not _init then 
@@ -68,19 +69,22 @@ sample_from_collection = function()
             else
                 _check_path[i] = 0
             end
-            -- _applied_path[i] = 0
+            _applied_path[i] = 0
         end
-        -- print_table(_check_path)
         _init = true
     end
 
-    -- local pose_index = math.random(0, path_length-1)
-    -- _pose_index = get_index_need_to_sample(_pose_index, _applied_path, _check_path)
-    -- _applied_path[_pose_index] = 1
+    local distance = {}
+    distance[1] = 0.05 + (_pose_index/path_length) * 0.05 + _failed_time * 0.01
+    if distance[1] > 0.15 then 
+        distance[1] = 0.15
+    end    
+    distance[2] = distance[1]
+    distance[3] = 0.01 + (_pose_index/path_length) * 0.1 + _failed_time * 0.02
+
 
     local pose_index = _pose_index%path_length
     local index =  pose_index * dim
-
     path_state[1] = _callback_path[index + 1]
     path_state[2] = _callback_path[index + 2]
     path_state[3] = _callback_path[index + 3]
@@ -90,52 +94,82 @@ sample_from_collection = function()
         path_state[4] = 0
     end
 
+    -- sample the faled state
+    if _matching_mode then
+        if (_failed_time > 500) then 
+            _pose_index = _pose_index +1
+            _failed_time = 0
+            _matching_pair = {}
+        else
+            _pose_index = _pose_index -1
+            local pos1 = {}
+            local pos2 = {}
+            local pos3 = {}
+            local pos4 = {}
+
+            if #_matching_pair == 0 then 
+                local index1 = (pose_index-2) * dim
+                local index2 = (pose_index-1) * dim
+                pos1[1] = _callback_path[index1 + 1]
+                pos1[2] = _callback_path[index1 + 2]
+                pos1[3] = _callback_path[index1 + 3]
+                pos1[4] = path_state[4]
+
+                pos2[1] = _callback_path[index2 + 1]
+                pos2[2] = _callback_path[index2 + 2]
+                pos2[3] = _callback_path[index2 + 3]
+                pos2[4] = path_state[4]
+
+                pos3[1] = (pos1[1] + pos2[1])/3
+                pos3[2] = (pos1[2] + pos2[2])/3
+                pos3[3] = (pos1[3] + pos2[1])/3
+                pos3[4] = path_state[4]
+
+                pos4[1] = (pos1[1] + pos2[1])*2/3
+                pos4[2] = (pos1[2] + pos2[2])*2/3
+                pos4[3] = (pos1[3] + pos2[3])*2/3
+                pos4[4] = path_state[4]
+
+                _matching_pair[1] = pos1
+                _matching_pair[2] = pos3
+                _matching_pair[3] = pos4
+                _matching_pair[4] = pos2
+                print('init!!!!')
+            end
+            if _failed_time%4 == 1 then 
+                _matching_index = 1
+            -- elseif _failed_time%4 == 2 then
+            --     _matching_index = 2  
+            -- elseif _failed_time%4 == 2 then
+            --     _matching_index = 3  
+            -- else 
+            --     _matching_index = 4
+            -- end
+            else 
+                _matching_index = math.random(4)
+            end
+            path_state = _matching_pair[_matching_index]
+            -- path_state[4] = path_state[4] + _failed_time * 0.025
+
+            _failed_time = _failed_time + 1
+        end
+    else
+        _applied_path[pose_index -1] = 1
+    end
+    print('failed time: ', _applied_path[pose_index], _failed_time, _pose_index, tostring(_matching_mode))
+
+    --------------------------------------------------
+
     if _check_path[pose_index] == 1 then 
         state = _callback_start
         state[1] = path_state[1]
         state[2] = path_state[2]
         _pose_index = _pose_index+1
         local r = simExtOMPL_writeState(_callback_task_hd, state)
-
+        -- sleep(1)
         return state
     end
 
-    -- sample the faled state
-    if not _is_add_to_tree then
-        _pose_index = _pose_index -1
-        if #_failed_state > 0 then
-            path_state = _failed_state
-            print(_pose_index)
-        end
-    end
-
-    --------------------------------------------------
-
-
-    -- for i=1, #candidate_pose, 1 do
-    --     local distance = 0.05 + (_pose_index/path_length + 1) * 0.05
-    --     if distance > 0.3 then 
-    --         distance = 0.3
-    --     end
-    --     state = get_state (i, path_state, candidate_pose, distance)    
-    --     -- forbidThreadSwitches(true)
-    --     local r = simExtOMPL_writeState(_callback_task_hd, state)
-    --     local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
-
-    --     if res == 0 then
-    --         print('found sample: '..i..' '..pose_index..' '..distance)
-    --         _pose_index = _pose_index+1
-    --         -- local r = simExtOMPL_writeState(_callback_task_hd, _callback_start)
-    --         -- forbidThreadSwitches(false)
-    --         return state
-    --     end
-    -- end
-    -- print('sample: '..state[1], state[2])
-
-    local distance = 0.05 + (_pose_index/path_length) * 0.05
-    if distance > 0.3 then 
-        distance = 0.3
-    end
 
     local pose_collection_size = #_pose_generator.pose_list
     local candidate_pose = get_candidate_states(_pose_generator.pose_list, path_state, distance)
@@ -145,11 +179,11 @@ sample_from_collection = function()
         return state
     end
 
-    local pose_collection_index = 1 --math.random(#candidate_pose)
+    local pose_collection_index = math.random(#candidate_pose)
     -- state = get_state (pose_collection_index, path_state, candidate_pose, distance) 
     state = candidate_pose[pose_collection_index]   
     local r = simExtOMPL_writeState(_callback_task_hd, state)
-    print('found sample: '..state[1]..'  '..state[2])
+    -- print('found sample: '..state[1]..'  '..state[2])
 
     -- sleep(3)
     -- simSwitchThread()
@@ -158,6 +192,19 @@ sample_from_collection = function()
 
     _is_add_to_tree = false
     return state
+end
+
+function is_free_area(pos)
+    local is_free = false
+    local free_base_hd = simGetObjectHandle('free_base')
+
+    simSetObjectPosition(free_base_hd, -1, pos)
+    local res=simCheckCollision(free_base_hd, _callback_collision_hd_2)
+    if res == 0 then
+        is_free = true
+    end
+
+    return is_free
 end
 
 get_index_need_to_sample = function(index, applied_list, check_list)
@@ -174,19 +221,17 @@ get_index_need_to_sample = function(index, applied_list, check_list)
 end
 
 get_state = function(path_state, state, distance)
-    -- local distance = 0.05
-    -- local state = pose_list[index]    
-
-    state[1] = torch.normal(path_state[1], distance)
-    state[2] = torch.normal(path_state[2], distance)   
+    state[1] = torch.normal(path_state[1], distance[1])
+    state[2] = torch.normal(path_state[2], distance[2])   
     -- state[3] = torch.normal(path_state[3], distance)    
-    state[6] = torch.normal(path_state[4], distance/2)
+    state[6] = torch.normal(path_state[4], distance[3])
 
     -- local rand_x = math.random()
     -- local rand_y = math.random()
-    -- state[1] = path_state[1] + (rand_x-0.5)*distance*2
-    -- state[2] = path_state[2] + (rand_y-0.5)*distance*2
-    -- state[6] = torch.normal(path_state[4], distance/2)
+    -- local rand_yaw = math.random()
+    -- state[1] = path_state[1] + (rand_x-0.5)*distance[1]*2
+    -- state[2] = path_state[2] + (rand_y-0.5)*distance[2]*2
+    -- state[6] = path_state[4] + (rand_yaw-0.5)*distance[3]*2
 
     return state
 end
@@ -198,14 +243,14 @@ get_candidate_states = function(pose_list, path_state, distance)
     for i=1, #pose_list, 1 do
         state = get_state (path_state, pose_list[i], distance)    
 
-        local diff_z = math.abs(pose_list[i][3] - state[3])
-        if diff_z < 0.1 then
+        local diff_z = pose_list[i][3] - state[3]
+        if diff_z > -0.02 and diff_z < 0.15 then
             -- candidate_pose[#candidate_pose+1] = pose_list[i]
             local r = simExtOMPL_writeState(_callback_task_hd, state)
             local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
             if res == 0 then 
                 candidate_pose[#candidate_pose+1] = pose_list[i]
-                if #candidate_pose > 0 then
+                if #candidate_pose > 2 then
                     return candidate_pose
                 end
             end
@@ -247,21 +292,7 @@ sample_callback = function()
         state[7+i] = _callback_init_config[i]
     end
 
-    -- distance = 0.3
-    -- end
-
     local found_pose, sampled_state = sample_state(_callback_robot_hd, _callback_joint_hds, state, distance)
-    -- if sampled_states == nil then
-    --     sampled_states[1] = sampled_state
-    --     sampled_states[2] = sampled_state
-    --     sampled_states[3] = sampled_state
-    -- end
-    -- if found_pose== 1 then 
-    --     sampled_states[#sampled_states + 1] = sampled_state
-    -- end
-    -- displayInfo('sampled_state '..#sampled_states)
-
-    --forbidThreadSwitches(false)
 
     -- sleep(3)
     --simSwitchThread()
@@ -272,9 +303,20 @@ end
 
 sampleNear_callback = function(state, distance)
     -- test = 1
-    displayInfo('in sample near!!!!!!!!!!!!!!!! ')
+    displayInfo('in sample near!!!!!!!!!!!!!!!! '..distance)
 
-    local found_pose, sampled_state = sample_state(_callback_robot_hd, _callback_joint_hds, state, distance)
+     -- state[1] = torch.normal(path_state[1], distance[1])
+    -- state[2] = torch.normal(path_state[2], distance[2])   
+    -- -- state[3] = torch.normal(path_state[3], distance)    
+    -- state[6] = torch.normal(path_state[4], distance[3])
+
+    -- local rand_x = math.random()
+    -- local rand_y = math.random()
+    -- state[1] = state[1] + (rand_x-0.5)*distance*2
+    -- state[2] = state[2] + (rand_y-0.5)*distance*2
+    -- state[6] = state[6] + (rand_y-0.5)*distance*4
+    -- print(#distance)
+    -- local found_pose, sampled_state = sample_state(_callback_robot_hd, _callback_joint_hds, state, distance)
         
     return state
 end
@@ -456,8 +498,6 @@ stateValidation=function(state)
 end
 
 quick_motionValidation = function(state_tree, state, valid)
-    _near_state_count = _near_state_count + 1
-
     local check_motion = true
 
     local diff_x = math.abs(state_tree[1] - state[1])
@@ -473,44 +513,51 @@ quick_motionValidation = function(state_tree, state, valid)
 end
 
 motionValidation=function(state_tree, state, valid)
-    -- print(' mc '..state_tree[1]..'  '..state_tree[2]..'  '..state[1]..'  '..state[2]..'  '..tostring(valid))
     
+    local diff_x = math.abs(state_tree[1] - state[1])
+    local diff_y = math.abs(state_tree[2] - state[2])
+
+    local dist = math.sqrt(diff_x*diff_x + diff_y*diff_y)
+
     if valid then 
+        if _matching_index ~= 1 then 
+            _matching_mode = false
+            _matching_pair = {}
+        end
         _is_add_to_tree = true
-        local hd1 = simGetObjectHandle('state_tree')
-        local hd2 = simGetObjectHandle('state')
+
+        if not _matching_mode then
+            _failed_time = 0
+        end
+        -- local hd1 = simGetObjectHandle('state_tree')
+        -- local hd2 = simGetObjectHandle('state')
 
         local pos1={}
         local pos2={}
+        local ori={}
 
         for i=1, 3, 1 do
             pos1[i] = state_tree[i]
             pos2[i] = state[i]
         end
+        for i=4, 7, 1 do
+            ori[i-3] = state[i]
+        end        
 
-        simSetObjectPosition(hd1, -1, pos2)
+        -- simSetObjectPosition(hd1, -1, pos2)
         -- simSetObjectPosition(hd2, -1, pos2)
-        sleep(1)
-        simSwitchThread()
+        -- sleep(1)
+        -- simSwitchThread()
+        -- create_dummy(pos2, ori)
+        print ('motion validation: '.._matching_index..' '..tostring(valid))
 
-    else
-        local diff_x = math.abs(state_tree[1] - state[1])
-        local diff_y = math.abs(state_tree[2] - state[2])
 
-        local dist = math.sqrt(diff_x*diff_x + diff_y*diff_y)
-        
+    else        
         if dist < _min_dist then 
-            for i=1, #state, 1 do
-                _failed_state[i] = (state_tree[i] + state[i])/2
-            end
-            _min_dist = dist
-        end
-        -- else
-        --     _is_add_to_tree = true
-        --     _failed_state = {}
-        -- end 
-        -- print(dist,#_failed_state)   
+            _matching_mode = true
+        end  
     end
+    -- print ('motion validation: '.._matching_index..' '..tostring(valid))
 
     return true
 end
@@ -556,4 +603,12 @@ get_intersection_point=function(x0, y0, x1, y1, r0, r1)
     local y3=y2-h*(x1-x0)/d       -- also y3=y2+h*(x1-x0)/d
 
     return x3, y3
+end
+
+function create_dummy(pos, ori)
+    local hd = simCreateDummy(0.1)
+    pos[3] = pos[3]+0.4
+    simSetObjectPosition(hd, -1, pos)
+    simSetObjectQuaternion(hd, -1, ori)
+    _dummy_list[#_dummy_list+1] = hd
 end
