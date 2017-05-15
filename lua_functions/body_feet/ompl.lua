@@ -1,4 +1,5 @@
 package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/?.lua"
+package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/body_feet/?.lua"
 require("OMPL_Processor")
 
 

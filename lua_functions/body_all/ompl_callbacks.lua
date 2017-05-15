@@ -1,4 +1,6 @@
-package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/?.lua"
+package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/common/?.lua"
+package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/body_all/?.lua"
+
 require("get_values")
 require("set_values")
 require("get_handles")
@@ -38,7 +40,7 @@ _pose_index = 1
 
 _failed_time = 0
 
-_min_dist = 0.6
+_min_dist = 0.5
 
 type = 1
 g_index = 0
@@ -75,13 +77,15 @@ sample_from_collection = function()
     end
 
     local distance = {}
-    distance[1] = 0.05 + (_pose_index/path_length) * 0.05 + _failed_time * 0.01
-    if distance[1] > 0.15 then 
-        distance[1] = 0.15
+    distance[1] = 0.03 + (_pose_index/path_length) * 0.05 + _failed_time * 0.05
+    if distance[1] > 0.2 then 
+        distance[1] = 0.2
     end    
     distance[2] = distance[1]
-    distance[3] = 0.01 + (_pose_index/path_length) * 0.1 + _failed_time * 0.02
-
+    distance[3] = 0.01 + (_pose_index/path_length) * 0.1 + _failed_time * 0.01
+    if distance[3] > 0.5 then 
+        distance[3] = 0.5
+    end 
 
     local pose_index = _pose_index%path_length
     local index =  pose_index * dim
@@ -96,7 +100,7 @@ sample_from_collection = function()
 
     -- sample the faled state
     if _matching_mode then
-        if (_failed_time > 500) then 
+        if (_failed_time > 1000) then 
             _pose_index = _pose_index +1
             _failed_time = 0
             _matching_pair = {}
@@ -108,7 +112,7 @@ sample_from_collection = function()
             local pos4 = {}
 
             if #_matching_pair == 0 then 
-                local index1 = (pose_index-2) * dim
+                local index1 = (pose_index-3) * dim
                 local index2 = (pose_index-1) * dim
                 pos1[1] = _callback_path[index1 + 1]
                 pos1[2] = _callback_path[index1 + 2]
@@ -149,7 +153,7 @@ sample_from_collection = function()
                 _matching_index = math.random(4)
             end
             path_state = _matching_pair[_matching_index]
-            -- path_state[4] = path_state[4] + _failed_time * 0.025
+            -- path_state[4] = path_state[4] + _failed_time * 0.025  - 0.5
 
             _failed_time = _failed_time + 1
         end
@@ -160,7 +164,7 @@ sample_from_collection = function()
 
     --------------------------------------------------
 
-    if _check_path[pose_index] == 1 then 
+    if _check_path[pose_index] == 1 and not _matching_mode then 
         state = _callback_start
         state[1] = path_state[1]
         state[2] = path_state[2]
@@ -174,6 +178,7 @@ sample_from_collection = function()
     local pose_collection_size = #_pose_generator.pose_list
     local candidate_pose = get_candidate_states(_pose_generator.pose_list, path_state, distance)
 
+    print(distance[1], distance[2], distance[3])
     if #candidate_pose == 0 then
         _pose_index = _pose_index+1
         return state
@@ -221,17 +226,17 @@ get_index_need_to_sample = function(index, applied_list, check_list)
 end
 
 get_state = function(path_state, state, distance)
-    state[1] = torch.normal(path_state[1], distance[1])
-    state[2] = torch.normal(path_state[2], distance[2])   
-    -- state[3] = torch.normal(path_state[3], distance)    
-    state[6] = torch.normal(path_state[4], distance[3])
+    -- state[1] = torch.normal(path_state[1], distance[1])
+    -- state[2] = torch.normal(path_state[2], distance[2])   
+    -- -- state[3] = torch.normal(path_state[3], distance)    
+    -- state[6] = path_state[4] --torch.normal(path_state[4], distance[3])
 
-    -- local rand_x = math.random()
-    -- local rand_y = math.random()
-    -- local rand_yaw = math.random()
-    -- state[1] = path_state[1] + (rand_x-0.5)*distance[1]*2
-    -- state[2] = path_state[2] + (rand_y-0.5)*distance[2]*2
-    -- state[6] = path_state[4] + (rand_yaw-0.5)*distance[3]*2
+    local rand_x = math.random()
+    local rand_y = math.random()
+    local rand_yaw = math.random()
+    state[1] = path_state[1] + (rand_x-0.5)*distance[1]*2
+    state[2] = path_state[2] + (rand_y-0.5)*distance[2]*2
+    state[6] = path_state[4] + (rand_yaw-0.5)*distance[3]*2
 
     return state
 end
@@ -244,15 +249,15 @@ get_candidate_states = function(pose_list, path_state, distance)
         state = get_state (path_state, pose_list[i], distance)    
 
         local diff_z = pose_list[i][3] - state[3]
-        if diff_z > -0.02 and diff_z < 0.15 then
+        if diff_z > -0.1 and diff_z < 0.2 then
             -- candidate_pose[#candidate_pose+1] = pose_list[i]
             local r = simExtOMPL_writeState(_callback_task_hd, state)
             local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
             if res == 0 then 
                 candidate_pose[#candidate_pose+1] = pose_list[i]
-                if #candidate_pose > 2 then
-                    return candidate_pose
-                end
+                -- if #candidate_pose > 5 then
+                --     return candidate_pose
+                -- end
             end
         end
     end
@@ -548,7 +553,7 @@ motionValidation=function(state_tree, state, valid)
         -- simSetObjectPosition(hd2, -1, pos2)
         -- sleep(1)
         -- simSwitchThread()
-        -- create_dummy(pos2, ori)
+        create_dummy(pos2, ori)
         print ('motion validation: '.._matching_index..' '..tostring(valid))
 
 

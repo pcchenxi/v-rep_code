@@ -1,6 +1,6 @@
 
 ------------------------------------------ set values ------------------------------------
-package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/?.lua"
+package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/common/?.lua"
 require("common_functions")
 
 set_joint_positions=function(joint_hds, positions)

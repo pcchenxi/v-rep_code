@@ -1,5 +1,5 @@
 -- generate environment --
-package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/?.lua"
+package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/common/?.lua"
 require("get_values")
 require("set_values")
 require("get_handles")
