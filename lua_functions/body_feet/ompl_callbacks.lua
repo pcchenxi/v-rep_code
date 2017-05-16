@@ -2,79 +2,157 @@ package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/commo
 require("get_values")
 require("set_values")
 require("get_handles")
-require("robot_pose_generator")
 
-local torch = require 'torch'
+OMPL_Callback_Feet = {}
+OMPL_Callback_Feet.__index = OMPL_Callback_Feet
 
-_callback_task_hd=nil
-_callback_foot_hds={}
-_callback_joint_hds={}
-_callback_robot_hd=nil
+function OMPL_Callback_Feet:new(task_hd, robot_hd, body_hd, foot_hds, robot_dim, joint_dim, collision_hd_1, collision_hd_2)
+    local this =
+    {
+        name = 'OMPL_Callback_Feet',
+        task_hd = task_hd,
+        robot_hd = robot_hd,
+        body_hd = body_hd,
 
-_callback_init_config={}
+        collision_hd_1 = collision_hd_1,
+        collision_hd_2 = collision_hd_2,
 
-_callback_collision_hd_1 = nil
-_callback_collision_hd_2 = nil
+        robot_dim = robot_dim,
+        joint_dim = joint_dim,
 
-_callback_state_dim = 3
+        foot_hds = foot_hds
+    }
+    setmetatable(this, OMPL_Callback_Feet)
+    return this
+end
 
-_callback_path = nil
-_callback_path_index = 1
-_callback_start = nil
-_callback_goal = nil
-_pose_generator = nil
+function OMPL_Callback_Feet:render_pose(state)
+    -- print('in render pose')
+    local foot_pos = simGetObjectPosition(self.foot_hds[1], self.robot_hd)
 
-test = 0
-
-_matching_mode = false
-_matching_pair = {}
-_matching_index = 1
-_init = false
-_check_path={}
-_applied_path={}
-_is_add_to_tree = true
-
-_pose_index = 1
-
-_failed_time = 0
-
-_min_dist = 0.6
-
-type = 1
-g_index = 0
-sampled_states={}
-
-_dummy_list={}
-
-render_pose = function(state, foot_hds)
-    local foot_pos = simSetObjectPosition(foot_hds[1], _callback_robot_hd)
+    -- print(foot_pos[1], foot_pos[2], foot_pos[3])
 
     local robot_pos = {}
     robot_pos[1] = state[1]
     robot_pos[2] = state[2]
-    robot_pos[3] = state[3]
+    robot_pos[3] = 0
+    simSetObjectPosition(self.robot_hd, -1, robot_pos)  -- robot center
 
-    foot_pos[1] = state[4]
-    simSetObjectPosition(foot_hds[1], _callback_robot_hd)
-    simSetObjectPosition(foot_hds[3], _callback_robot_hd)
+    if self.joint_dim > 0 then 
+        foot_pos[1] = state[#state]                                         -- feet
+        simSetObjectPosition(self.foot_hds[1], self.robot_hd, foot_pos)
+        foot_pos[1] = -state[#state]
+        simSetObjectPosition(self.foot_hds[2], self.robot_hd, foot_pos)
 
-    foot_pos[1] = -state[4]
-    simSetObjectPosition(foot_hds[2], _callback_robot_hd)
-    simSetObjectPosition(foot_hds[4], _callback_robot_hd)
+        foot_pos[2] = foot_pos[2]-0.3
+        simSetObjectPosition(self.foot_hds[3], self.robot_hd, foot_pos)
+        foot_pos[1] = state[#state]
+        simSetObjectPosition(self.foot_hds[4], self.robot_hd, foot_pos)
+    end
+    local body_pos = {}
+    body_pos[1] = 0
+    body_pos[2] = 0
+    if self.joint_dim > 1 then
+        body_pos[3] = state[3]  
+    else
+        body_pos[3] = 0.26
+    end
+
+    simSetObjectPosition(self.body_hd, self.robot_hd, body_pos)  -- body 
+
 end
 
-stateValidation=function(state)
-    -- displayInfo('in stateValidation ')
 
-    -- Read the current state:
-    --local res, current_state = simExtOMPL_readState(_task_hd)
-    --_sample_num = _sample_num+1
-    local r = simExtOMPL_writeState(_callback_task_hd, state)
+function sample_state()
+    
+    return state
+end
+
+
+
+quick_motionValidation = function(state_tree, state, valid)
+    local check_motion = true
+
+    local diff_x = math.abs(state_tree[1] - state[1])
+    local diff_y = math.abs(state_tree[2] - state[2])
+
+    -- if diff_x > 0.3 or diff_y > 0.3 then 
+    --     check_motion = false
+    -- end
+
+    -- print('qmc '..state_tree[1]..'  '..state_tree[2]..'  '..state[1]..'  '..state[2]..'  '..tostring(check_motion))
+    -- _is_add_to_tree = tru
+    return check_motion
+end
+
+function motionValidation(state_tree, state, valid)
+    
+    local diff_x = math.abs(state_tree[1] - state[1])
+    local diff_y = math.abs(state_tree[2] - state[2])
+
+    local dist = math.sqrt(diff_x*diff_x + diff_y*diff_y)
+
+    if valid then 
+        if _matching_index ~= 1 then 
+            _matching_mode = false
+            _matching_pair = {}
+        end
+        _is_add_to_tree = true
+
+        if not _matching_mode then
+            _failed_time = 0
+        end
+        -- local hd1 = simGetObjectHandle('state_tree')
+        -- local hd2 = simGetObjectHandle('state')
+
+        local pos1={}
+        local pos2={}
+        local ori={}
+
+        for i=1, 3, 1 do
+            pos1[i] = state_tree[i]
+            pos2[i] = state[i]
+        end
+        for i=4, 7, 1 do
+            ori[i-3] = state[i]
+        end        
+
+        -- simSetObjectPosition(hd1, -1, pos2)
+        -- simSetObjectPosition(hd2, -1, pos2)
+        -- sleep(1)
+        -- simSwitchThread()
+        create_dummy(pos2, ori)
+        print ('motion validation: '.._matching_index..' '..tostring(valid))
+
+
+    else        
+        if dist < _min_dist then 
+            _matching_mode = true
+        end  
+    end
+    -- print ('motion validation: '.._matching_index..' '..tostring(valid))
+
+    return true
+end
+
+function create_dummy(pos, ori)
+    local hd = simCreateDummy(0.1)
+    pos[3] = pos[3]+0.4
+    simSetObjectPosition(hd, -1, pos)
+    simSetObjectQuaternion(hd, -1, ori)
+    _dummy_list[#_dummy_list+1] = hd
+end
+
+function OMPL_Callback_Feet:state_validation(state)
+    -- print('validation!!!!!!!!!! in call back '.. self.name)
+    -- print('state:',state[1], state[2], state[3])
+
+    self:render_pose(state)
     local pass=false
     
     -- check if the foot is on the ground
     local isOnGround = true
-    -- foot_pos = get_foottip_positions(_callback_foot_hds)
+    -- foot_pos = get_foottip_positions(self.foot_hds)
     -- for i=1,#foot_pos,1 do
     --     local pos = foot_pos[i]
     --     if pos[3] > 0.03 then
@@ -84,21 +162,15 @@ stateValidation=function(state)
     -- end
 
     if isOnGround then
-        local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
+        local res=simCheckCollision(self.collision_hd_1, self.collision_hd_2)
         --local res, dist = simCheckDistance(simGetCollectionHandle('robot_body'),simGetCollectionHandle('obstacles'),0.02)
         if res == 0 then
             pass=true
             --_valid_num = _valid_num+1
         end
-    end
-    --res = simExtOMPL_writeState(_task_hd, current_state)
-    -- sleep(1)
-    -- simSwitchThread()
-    --displayInfo('callback: '..test)
+        print('collision result: ', res)
 
-    -- Return whether the tested state is valid or not:
-    -- print('stateValidation: '..state[1], state[2], tostring(pass))
-    -- _is_add_to_tree = pass
+    end
 
     return pass
 end
