@@ -139,10 +139,10 @@ function OMPL_Processor:init_task(start_name, target_name, task_id)
 end
 
 function OMPL_Processor:compute_path(max_time)
-    --forbidThreadSwitches(true)
+    forbidThreadSwitches(true)
     local r = nil
     r, self.path=simExtOMPL_compute(self.task_hd, max_time, -1, 0)
-    --forbidThreadSwitches(false)
+    forbidThreadSwitches(false)
 
     local path_step = #self.path/self.state_dim
     print(self.name .. 'found path with step ' ..path_step )
@@ -218,7 +218,7 @@ function OMPL_Processor:apply_path()
         end
         res = simExtOMPL_writeState(self.task_hd, state) -- 12 joints, yaw,x,y
 
-        sleep(0.02)
+        sleep(0.12)
         simSwitchThread()
     end
 end

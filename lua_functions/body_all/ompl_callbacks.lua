@@ -255,9 +255,9 @@ get_candidate_states = function(pose_list, path_state, distance)
             local res=simCheckCollision(_callback_collision_hd_1,_callback_collision_hd_2)
             if res == 0 then 
                 candidate_pose[#candidate_pose+1] = pose_list[i]
-                -- if #candidate_pose > 5 then
-                --     return candidate_pose
-                -- end
+                if #candidate_pose > 5 then
+                    return candidate_pose
+                end
             end
         end
     end
@@ -308,7 +308,7 @@ end
 
 sampleNear_callback = function(state, distance)
     -- test = 1
-    displayInfo('in sample near!!!!!!!!!!!!!!!! '..distance)
+    -- displayInfo('in sample near!!!!!!!!!!!!!!!! '..distance)
 
      -- state[1] = torch.normal(path_state[1], distance[1])
     -- state[2] = torch.normal(path_state[2], distance[2])   
@@ -553,7 +553,7 @@ motionValidation=function(state_tree, state, valid)
         -- simSetObjectPosition(hd2, -1, pos2)
         -- sleep(1)
         -- simSwitchThread()
-        create_dummy(pos2, ori)
+        -- create_dummy(pos2, ori)
         print ('motion validation: '.._matching_index..' '..tostring(valid))
 
 
