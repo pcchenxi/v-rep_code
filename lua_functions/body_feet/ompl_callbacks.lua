@@ -36,7 +36,7 @@ function OMPL_Callback_Feet:render_pose(state)
     local robot_pos = {}
     robot_pos[1] = state[1]
     robot_pos[2] = state[2]
-    robot_pos[3] = 0
+    robot_pos[3] = 0.01
     simSetObjectPosition(self.robot_hd, -1, robot_pos)  -- robot center
 
     if self.robot_dim == 2 then

@@ -194,10 +194,10 @@ function OMPL_Processor:init_statespace(robot_hd, joint_hds, start_pose, goal_po
     end
 
     if self.joint_dim > 0 then
-        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('feet_space',sim_ompl_statespacetype_joint_position, self.foot_hds[1], {0.05}, {0.18}, 5)               -- base space        
+        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('feet_space',sim_ompl_statespacetype_joint_position, self.foot_hds[1], {0.02}, {0.38}, 5)               -- base space        
     end
     if self.joint_dim > 1 then
-        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('body_space',sim_ompl_statespacetype_joint_position, self.body_hd, {0.05}, {0.18}, 4)               -- base space        
+        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('body_space',sim_ompl_statespacetype_joint_position, self.body_hd, {0.05}, {0.28}, 4)               -- base space        
     end
 
     print("init state space "..#state_spaces, self.robot_dim)
@@ -213,7 +213,7 @@ function OMPL_Processor:apply_path()
         feet_callback_hd:render_pose(state, self.foot_hds)
         -- res = simExtOMPL_writeState(self.task_hd, state) -- 12 joints, yaw,x,y
 
-        sleep(0.02)
+        sleep(0.1)
         simSwitchThread()
     end
 end
