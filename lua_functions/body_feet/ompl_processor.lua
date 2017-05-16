@@ -154,8 +154,8 @@ function OMPL_Processor:init_statespace(robot_hd, joint_hds, start_pose, goal_po
     local max_v = 0
     local weight = 0
     
-    local dis_x = math.abs(start_pose[1] - goal_pose[1])
-    local dis_y = math.abs(start_pose[2] - goal_pose[2])
+    local dis_x = math.abs(start_pose[1] - goal_pose[1]) + 0.5
+    local dis_y = math.abs(start_pose[2] - goal_pose[2]) + 0.5
 
     local mid_x = (start_pose[1] + goal_pose[1])/2
     local mid_y = (start_pose[2] + goal_pose[2])/2
@@ -194,10 +194,10 @@ function OMPL_Processor:init_statespace(robot_hd, joint_hds, start_pose, goal_po
     end
 
     if self.joint_dim > 0 then
-        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('feet_space',sim_ompl_statespacetype_joint_position, self.foot_hds[1], {0.1}, {0.25}, 5)               -- base space        
+        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('feet_space',sim_ompl_statespacetype_joint_position, self.foot_hds[1], {0.05}, {0.18}, 5)               -- base space        
     end
     if self.joint_dim > 1 then
-        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('body_space',sim_ompl_statespacetype_joint_position, self.body_hd, {0.03}, {0.35}, 4)               -- base space        
+        state_spaces[#state_spaces+1]=simExtOMPL_createStateSpace('body_space',sim_ompl_statespacetype_joint_position, self.body_hd, {0.12}, {0.35}, 4)               -- base space        
     end
 
     print("init state space "..#state_spaces, self.robot_dim)
@@ -219,15 +219,25 @@ function OMPL_Processor:apply_path()
 end
 
 function OMPL_Processor:get_pose(hd)
-    local state = simGetObjectPosition(hd, -1)
+    local pos = simGetObjectPosition(hd, -1)
+    local ori   = simGetObjectQuaternion(hd,-1)
     local foot_pos = simGetObjectPosition(self.foot_hds[1], self.robot_hd)
     local body_pos = simGetObjectPosition(self.body_hd, self.robot_hd)
+    print('ori 4',ori[4])
+
+    local state={}
+    state[1] = pos[1]
+    state[2] = pos[2]
+
+    if self.robot_dim == 2 then
+        state[3] = ori[3]
+    end
 
     if self.joint_dim > 0 then 
-        state[3] = math.abs(foot_pos[1])
+        state[#state+1] = math.abs(foot_pos[1])
     end
     if self.joint_dim > 1 then
-        state[4] = body_pos[3]
+        state[#state+1] = body_pos[3]
     end
 
     return state

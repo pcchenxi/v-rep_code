@@ -31,6 +31,7 @@ function OMPL_Callback_Feet:render_pose(state)
     local foot_pos = simGetObjectPosition(self.foot_hds[1], self.robot_hd)
 
     -- print(foot_pos[1], foot_pos[2], foot_pos[3])
+    local feet_index = 3
 
     local robot_pos = {}
     robot_pos[1] = state[1]
@@ -38,22 +39,32 @@ function OMPL_Callback_Feet:render_pose(state)
     robot_pos[3] = 0
     simSetObjectPosition(self.robot_hd, -1, robot_pos)  -- robot center
 
+    if self.robot_dim == 2 then
+        local robot_ori = {}
+        robot_ori[1] = 0
+        robot_ori[2] = 0
+        robot_ori[3] = state[3]
+        robot_ori[4] = 1
+        feet_index = 4
+        simSetObjectQuaternion(self.robot_hd,-1, robot_ori)
+    end
+
     if self.joint_dim > 0 then 
-        foot_pos[1] = state[#state]                                         -- feet
+        foot_pos[1] = state[feet_index]                                         -- feet
         simSetObjectPosition(self.foot_hds[1], self.robot_hd, foot_pos)
-        foot_pos[1] = -state[#state]
+        foot_pos[1] = -state[feet_index]
         simSetObjectPosition(self.foot_hds[2], self.robot_hd, foot_pos)
 
         foot_pos[2] = foot_pos[2]-0.3
         simSetObjectPosition(self.foot_hds[3], self.robot_hd, foot_pos)
-        foot_pos[1] = state[#state]
+        foot_pos[1] = state[feet_index]
         simSetObjectPosition(self.foot_hds[4], self.robot_hd, foot_pos)
     end
     local body_pos = {}
     body_pos[1] = 0
     body_pos[2] = 0
     if self.joint_dim > 1 then
-        body_pos[3] = state[3]  
+        body_pos[3] = state[#state]  
     else
         body_pos[3] = 0.26
     end
