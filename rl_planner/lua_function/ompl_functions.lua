@@ -1,5 +1,4 @@
-package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/common/?.lua"
-package.path=package.path .. ";/home/xi/workspace/v-rep_code/lua_functions/body_all/?.lua"
+package.path=package.path .. ";/home/xi/workspace/v-rep_code/rl_planner/lua_functions/?.lua"
 
 require("ompl_callbacks")
 require("common_functions")

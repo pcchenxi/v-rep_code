@@ -141,7 +141,7 @@ end
 function OMPL_Processor:compute_path(max_time)
     forbidThreadSwitches(true)
     local r = nil
-    r, self.path=simExtOMPL_compute(self.task_hd, max_time, -1, 0)
+    r, self.path=simExtOMPL_compute(self.task_hd, max_time, -1, 50)
     forbidThreadSwitches(false)
 
     local path_step = #self.path/self.state_dim
