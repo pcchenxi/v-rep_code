@@ -50,7 +50,7 @@ function do_action(robot_hd, joint_hds, action)
         foot_pos[2] = tilt_pos[3] - 0.0444
 
         if foot_pos[2] < 0 then
-            displayInfo('no pose '..i..' '..foot_pos[1]..' '..foot_pos[2] )
+            displayInfo('too low '..i..' '..foot_pos[1]..' '..foot_pos[2] )
             restore_pose(robot_hd, joint_hds, current_pos, current_ori, current_joints)
             return {h, l}, 'f'
         end
@@ -58,7 +58,7 @@ function do_action(robot_hd, joint_hds, action)
         local knee_x, knee_y = get_intersection_point(0, 0, foot_pos[1], foot_pos[2], r0, r1)
 
         if knee_x == -1 or knee_x ~= knee_x then
-            displayInfo('no pose '..i..' '..foot_pos[1]..' '..foot_pos[2] )
+            displayInfo('no pose found '..i..' '..foot_pos[1]..' '..foot_pos[2] )
             restore_pose(robot_hd, joint_hds, current_pos, current_ori, current_joints)
             return {h, l}, 'f'
         end
@@ -66,7 +66,7 @@ function do_action(robot_hd, joint_hds, action)
         local foot_x_fromknee = foot_pos[1]-knee_x
         local foot_y_fromknee = foot_pos[2]-knee_y
 
-        displayInfo('knee pos: '..foot_x_fromknee..' '..foot_y_fromknee)
+        -- displayInfo('knee pos: '..foot_x_fromknee..' '..foot_y_fromknee)
 
         local angle_thigh = math.atan(knee_y/knee_x)
         local angle_knee = math.atan(foot_y_fromknee/foot_x_fromknee)
@@ -77,6 +77,7 @@ function do_action(robot_hd, joint_hds, action)
         simSetJointPosition(leg_joints[2], angle_thigh)
         simSetJointPosition(leg_joints[3], angle_knee-angle_thigh)
 
+        print (i, angle_thigh, angle_knee-angle_thigh)
         -- local real_foot_pos = 
     end
 
@@ -84,7 +85,7 @@ function do_action(robot_hd, joint_hds, action)
         return {sample_pose[3], math.abs(foot_pos[1])}, 't'
     else
         restore_pose(robot_hd, joint_hds, current_pos, current_ori, current_joints)
-        displayInfo('no pose '..i..' '..foot_pos[1]..' '..foot_pos[2] )
+        displayInfo('collide '..i..' '..foot_pos[1]..' '..foot_pos[2] )
         return {h, l}, 'f'      
     end
 end
@@ -102,8 +103,6 @@ function is_valid()
     if res > 0 then 
         is_valid = false
     end
-
-
 
     return is_valid
 end

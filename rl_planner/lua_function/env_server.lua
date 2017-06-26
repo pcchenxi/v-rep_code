@@ -24,6 +24,8 @@ function get_global_path(inInts,inFloats,inStrings,inBuffer)
     -- forbidThreadSwitches(false)
 
     -- return {},{},{},'f'
+    path_in_robot_frame = transform_path_to_robotf(path_dummy_list, robot_hd)
+
     print(#path_in_robot_frame)
     return {}, path_in_robot_frame, {}, ''
 
@@ -63,9 +65,9 @@ end
 function create_path_dummy(path)
     local dummy_list = {}
     local pos={}
-    for i=3, #path, 2 do  -- skip the first point in path
-        pos[1] = path[i-2]
-        pos[2] = path[i-1]
+    for i=1, #path, 2 do  
+        pos[1] = path[i]
+        pos[2] = path[i+1]
         pos[3] = 0
         local hd = create_dummy(pos)
         dummy_list[#dummy_list+1] = hd
@@ -94,10 +96,9 @@ joint_hds = get_joint_hds()
 
 g_path = generate_path()
 path_dummy_list = create_path_dummy(g_path)
-path_in_robot_frame = transform_path_to_robotf(path_dummy_list, robot_hd)
 
-action = {1, 1, 0, -1, -1}
-act = do_action(robot_hd, joint_hds, action)
+-- action = {1, 1, 0, -1, -1}
+-- act = do_action(robot_hd, joint_hds, action)
 -- print (act[1], act[2])
 
 while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
