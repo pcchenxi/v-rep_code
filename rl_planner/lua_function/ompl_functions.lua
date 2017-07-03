@@ -26,11 +26,11 @@ init_statespace=function(robot_hd, joint_hds, start_pose, goal_pose)
     local max_v = 0
     local weight = 0
     
-    local min_y = start_pose[2]-0.5
-    local max_y = goal_pose[2]+0.5
+    local min_y = -5 --start_pose[2]-1.5
+    local max_y = 1  --goal_pose[2]+1.5
 
-    local min_x = -0.5
-    local max_x = 0.5
+    local min_x = -1.1
+    local max_x = 1.1
 
     local min_z = 0
     local max_z = 0
@@ -166,7 +166,7 @@ end
 
 compute_path=function(task_hd, max_time)
     -- forbidThreadSwitches(true)
-    r,_path=simExtOMPL_compute(task_hd, max_time, -1, 10)
+    r,_path=simExtOMPL_compute(task_hd, max_time, -1, 5)
     -- forbidThreadSwitches(false)
 
     path_step = #_path/_state_dim

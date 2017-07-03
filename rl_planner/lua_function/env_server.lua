@@ -7,6 +7,12 @@ simSetThreadSwitchTiming(2)
 simExtRemoteApiStart(19999)
 
 -------- remote functions ---------------------
+function reset(inInts,inFloats,inStrings,inBuffer)
+    -- print (#inFloats)
+    init()
+    return {}, {}, {}, ''
+end
+
 function step(inInts,inFloats,inStrings,inBuffer)
     print (#inFloats)
     robot_state, res = do_action(robot_hd, joint_hds, inFloats)
@@ -33,6 +39,8 @@ function generate_path()
     path = compute_path(task_hd, 10)
     displayInfo('finish 1 '..#path)
     -- applyPath(task_hd, path, 0.1)
+    simExtOMPL_destroyTask(task_hd)
+
     return path
 end
 
@@ -87,13 +95,18 @@ function transform_path_to_robotf(path_d_list, robot_hd)
     return path_in_robotf
 end
 
-function reset()
+function sample_init()
+    -- sample start robot position
     local robot_pos = {}
     robot_pos[1] = math.random() * x_range + x_shift
     robot_pos[2] = math.random() * y_range + y_shift
-    robot_pos[3] = 0
+    robot_pos[3] = start_pos[3]
     print ('robot location: ', robot_pos[1], robot_pos[2])
 
+    local robot_ori = start_ori
+    start_ori[3] = math.random() * math.pi
+
+    -- sample target position
     local target_pos = {}
     target_pos[1] = math.random() * x_range + x_shift
     target_pos[2] = math.random() * y_range + y_shift
@@ -102,20 +115,39 @@ function reset()
 
     -- set robot --
     simSetObjectPosition(robot_hd,-1,robot_pos)
+    simSetObjectPosition(fake_robot_hd,-1,robot_pos)
+
     simSetObjectQuaternion(robot_hd,-1,start_ori)
+    simSetObjectQuaternion(fake_robot_hd,-1,start_ori)
+
     set_joint_positions(joint_hds, start_joints)
 
     -- set target --
     simSetObjectPosition(target_hd,-1,target_pos)
 
-    -- check collision --
-    local res=simCheckCollision(collision_hd_1, collision_hd_2)
-    
+    -- check collision for robot pose --
+    local res_robot = simCheckCollision(robot_body_hd, obstacle_hd)
+    local res_target = simCheckCollision(target_hd, obstacle_hd)
+
+    print (res_robot, res_target)
+
+    return res_robot+res_target
+    -- print (res_robot, res_target)
     -- g_path = generate_path()
     -- path_dummy_list = create_path_dummy(g_path)
 end
 
+function init()
+    local init_value = 1
+    while (init_value ~= 0) do
+        init_value = sample_init()
+    end
+    g_path = generate_path()
+    path_dummy_list = create_path_dummy(g_path)
 
+    print ('init!')
+    return 1
+end
 
 g_path = {}
 path_in_robot_frame = {}
@@ -129,15 +161,22 @@ x_shift = -1
 y_range = 3
 y_shift = -3
 
+robot_body_hd = simGetCollectionHandle('robot_body')
+obstacle_hd = simGetCollectionHandle('obstacles')
+
 target_hd = simGetObjectHandle('target')
 robot_hd = simGetObjectHandle('rwRobot')
+fake_robot_hd = simGetObjectHandle('base_yaw')
 joint_hds = get_joint_hds()
 
+start_pos = simGetObjectPosition(robot_hd, -1)
 start_joints = get_joint_positions(joint_hds)
 start_ori = simGetObjectQuaternion(robot_hd,-1)
 
-reset()
+-- init()
+-- sleep(2)
 
+-- init()
 -- g_path = generate_path()
 -- path_dummy_list = create_path_dummy(g_path)
 
