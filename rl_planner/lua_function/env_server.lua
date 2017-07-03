@@ -6,10 +6,6 @@ require("robot_control")
 simSetThreadSwitchTiming(2) 
 simExtRemoteApiStart(19999)
 
-
-g_path = {}
-path_in_robot_frame = {}
-path_dummy_list = {}
 -------- remote functions ---------------------
 function step(inInts,inFloats,inStrings,inBuffer)
     print (#inFloats)
@@ -91,11 +87,59 @@ function transform_path_to_robotf(path_d_list, robot_hd)
     return path_in_robotf
 end
 
+function reset()
+    local robot_pos = {}
+    robot_pos[1] = math.random() * x_range + x_shift
+    robot_pos[2] = math.random() * y_range + y_shift
+    robot_pos[3] = 0
+    print ('robot location: ', robot_pos[1], robot_pos[2])
+
+    local target_pos = {}
+    target_pos[1] = math.random() * x_range + x_shift
+    target_pos[2] = math.random() * y_range + y_shift
+    target_pos[3] = 0
+    print ('target location: ', target_pos[1], target_pos[2])
+
+    -- set robot --
+    simSetObjectPosition(robot_hd,-1,robot_pos)
+    simSetObjectQuaternion(robot_hd,-1,start_ori)
+    set_joint_positions(joint_hds, start_joints)
+
+    -- set target --
+    simSetObjectPosition(target_hd,-1,target_pos)
+
+    -- check collision --
+    local res=simCheckCollision(collision_hd_1, collision_hd_2)
+    
+    -- g_path = generate_path()
+    -- path_dummy_list = create_path_dummy(g_path)
+end
+
+
+
+g_path = {}
+path_in_robot_frame = {}
+path_dummy_list = {}
+
+start_joints = {}
+
+x_range = 2
+x_shift = -1
+
+y_range = 3
+y_shift = -3
+
+target_hd = simGetObjectHandle('target')
 robot_hd = simGetObjectHandle('rwRobot')
 joint_hds = get_joint_hds()
 
-g_path = generate_path()
-path_dummy_list = create_path_dummy(g_path)
+start_joints = get_joint_positions(joint_hds)
+start_ori = simGetObjectQuaternion(robot_hd,-1)
+
+reset()
+
+-- g_path = generate_path()
+-- path_dummy_list = create_path_dummy(g_path)
 
 -- action = {1, 1, 0, -1, -1}
 -- act = do_action(robot_hd, joint_hds, action)

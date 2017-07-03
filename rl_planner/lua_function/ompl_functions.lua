@@ -166,7 +166,7 @@ end
 
 compute_path=function(task_hd, max_time)
     -- forbidThreadSwitches(true)
-    r,_path=simExtOMPL_compute(task_hd, max_time, -1, 0)
+    r,_path=simExtOMPL_compute(task_hd, max_time, -1, 10)
     -- forbidThreadSwitches(false)
 
     path_step = #_path/_state_dim
