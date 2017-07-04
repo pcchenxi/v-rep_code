@@ -3,8 +3,8 @@ require("common_functions")
 require("ompl_functions")
 require("robot_control")
 
-simSetThreadSwitchTiming(2) 
-simExtRemoteApiStart(19999)
+-- simSetThreadSwitchTiming(2) 
+-- simExtRemoteApiStart(19999)
 
 -------- remote functions ---------------------
 function reset(inInts,inFloats,inStrings,inBuffer)
@@ -64,6 +64,13 @@ function create_dummy(pos)
     -- simSetObjectQuaternion(hd, -1, ori)
     -- path_dummy_list[#path_dummy_list+1] = hd
     return hd
+end
+
+function remove_dummy()
+    for i=1, #path_dummy_list, 1 do
+        local object_hd = path_dummy_list[i]
+        res = simRemoveObject(object_hd)
+    end 
 end
 
 function create_path_dummy(path)
@@ -138,6 +145,7 @@ function sample_init()
 end
 
 function init()
+    remove_dummy()
     local init_value = 1
     while (init_value ~= 0) do
         init_value = sample_init()
@@ -184,10 +192,10 @@ start_ori = simGetObjectQuaternion(robot_hd,-1)
 -- act = do_action(robot_hd, joint_hds, action)
 -- print (act[1], act[2])
 
-while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
-    -- do something in here
-    simSwitchThread()
-end
+-- while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
+--     -- do something in here
+--     simSwitchThread()
+-- end
 
 
 

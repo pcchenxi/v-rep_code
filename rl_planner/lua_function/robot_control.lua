@@ -8,7 +8,7 @@ step = 0.05
 dx = step
 dy = step
 dw = step
-dh = step
+dh = step/3.0
 dl = step
 
 collision_hd_1 = simGetCollectionHandle('robot_body')
@@ -21,9 +21,9 @@ function do_action(robot_hd, joint_hds, action)
     local h, l = get_current_pose(robot_hd, joint_hds)
 
     local sample_pose = {}
-    sample_pose[1] = current_pos[1] + dx*action[1]
-    sample_pose[2] = current_pos[2] + dy*action[2] 
-    sample_pose[3] = current_pos[3] + dh*action[4] 
+    sample_pose[1] = dx*action[1]
+    sample_pose[2] = dy*action[2] 
+    sample_pose[3] = dh*action[4] 
 
     local sample_ori = {}
     sample_ori[1] = current_ori[1] 
@@ -31,7 +31,7 @@ function do_action(robot_hd, joint_hds, action)
     sample_ori[3] = current_ori[3] + dw*action[3] 
     sample_ori[4] = current_ori[4]
 
-    simSetObjectPosition(robot_hd,-1,sample_pose)
+    simSetObjectPosition(robot_hd,robot_hd,sample_pose)
     simSetObjectQuaternion(robot_hd,-1,sample_ori)
 
     local r0 = 0.07238 --math.sqrt(knee_pos[1]^2 + knee_pos[2]^2)
@@ -40,6 +40,7 @@ function do_action(robot_hd, joint_hds, action)
     local tilt_pos = {}
     local foot_pos = {}
 
+    -- sample feet and joint --
     for i=1, 4, 1 do
         local leg_joints=get_leg_hds(i) -- pan, tilt, knee, ankle
 
@@ -81,11 +82,12 @@ function do_action(robot_hd, joint_hds, action)
         -- local real_foot_pos = 
     end
 
+    -- check collision --
     if is_valid() then 
         return {sample_pose[3], math.abs(foot_pos[1])}, 't'
     else
         restore_pose(robot_hd, joint_hds, current_pos, current_ori, current_joints)
-        displayInfo('collide '..i..' '..foot_pos[1]..' '..foot_pos[2] )
+        -- displayInfo('collide '..i..' '..foot_pos[1]..' '..foot_pos[2] )
         return {h, l}, 'f'      
     end
 end
