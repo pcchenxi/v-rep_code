@@ -14,7 +14,12 @@ dl = step
 collision_hd_1 = simGetCollectionHandle('robot_body')
 collision_hd_2 = simGetCollectionHandle('obstacles')
 
+
 function do_action(robot_hd, joint_hds, action)
+    if(#action == 1) then
+        action = action_list[action[1]]
+    end
+
     local current_pos=simGetObjectPosition(robot_hd,-1)
     local current_ori=simGetObjectQuaternion(robot_hd,-1)
     local current_joints = get_joint_positions(joint_hds)

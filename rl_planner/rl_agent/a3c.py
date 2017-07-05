@@ -1,3 +1,4 @@
+
 import multiprocessing
 import threading
 import tensorflow as tf
@@ -6,13 +7,19 @@ import gym
 import os
 import shutil
 import matplotlib.pyplot as plt
+import sys
+
+sys.path.append("../environment") 
+
+import env_vrep
 
 
 GAME = 'CartPole-v0'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
-N_WORKERS = multiprocessing.cpu_count()
-MAX_GLOBAL_EP = 1000
+# N_WORKERS = multiprocessing.cpu_count()
+N_WORKERS = 1
+MAX_GLOBAL_EP = 10
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 20
 GAMMA = 0.9
@@ -24,9 +31,11 @@ GLOBAL_EP = 0
 
 env = gym.make(GAME)
 
-N_S = env.observation_space.shape[0]
-N_A = env.action_space.n
+# N_S = env.observation_space.shape[0]
+# N_A = env.action_space.n
 
+N_S = 10
+N_A = 9 #243
 
 class ACNet(object):
     def __init__(self, scope, globalAC=None):
@@ -87,6 +96,7 @@ class ACNet(object):
         SESS.run([self.pull_a_params_op, self.pull_c_params_op])
 
     def choose_action(self, s):  # run by a local
+        s = np.asarray(s)
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         action = np.random.choice(range(prob_weights.shape[1]),
                                   p=prob_weights.ravel())  # select action w.r.t the actions prob
@@ -94,23 +104,33 @@ class ACNet(object):
 
 
 class Worker(object):
-    def __init__(self, name, globalAC):
-        self.env = gym.make(GAME).unwrapped
+    def __init__(self, name, prot_num, globalAC):
+        # self.env = gym.make(GAME).unwrapped
+        self.env = env_vrep.Simu_env(prot_num)
+        self.env.connect_vrep()
         self.name = name
         self.AC = ACNet(name, globalAC)
 
     def work(self):
         global GLOBAL_RUNNING_R, GLOBAL_EP
+        print 'in work function '
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
-            s = self.env.reset()
+            # s = self.env.reset()        
+            s, r, done, info = self.env.reset()
             ep_r = 0
             while True:
-                if self.name == 'W_0':
-                    self.env.render()
+                # if self.name == 'W_0':
+                #     self.env.render()
                 a = self.AC.choose_action(s)
-                s_, r, done, info = self.env.step(a)
+                print a
+                s_, r, done, info = self.env.step([a])
+                print 'action: ', a
+                print 'state: ', s_
+                print 'reward: ', r
+                print 'done: ', done
+
                 if done: r = -5
                 ep_r += r
                 buffer_s.append(s)
@@ -121,6 +141,7 @@ class Worker(object):
                     if done:
                         v_s_ = 0   # terminal
                     else:
+                        s_ = np.asarray(s_)
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: s_[np.newaxis, :]})[0, 0]
                     buffer_v_target = []
                     for r in buffer_r[::-1]:    # reverse buffer r
@@ -154,36 +175,37 @@ class Worker(object):
                     GLOBAL_EP += 1
                     break
 
-# if __name__ == "__main__":
-#     SESS = tf.Session()
+if __name__ == "__main__":
+    SESS = tf.Session()
 
-#     with tf.device("/cpu:0"):
-#         OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')
-#         OPT_C = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
-#         GLOBAL_AC = ACNet(GLOBAL_NET_SCOPE)  # we only need its params
-#         workers = []
-#         # Create worker
-#         for i in range(N_WORKERS):
-#             i_name = 'W_%i' % i   # worker name
-#             workers.append(Worker(i_name, GLOBAL_AC))
+    with tf.device("/cpu:0"):
+        OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')
+        OPT_C = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
+        GLOBAL_AC = ACNet(GLOBAL_NET_SCOPE)  # we only need its params
+        workers = []
+        # Create worker
+        for i in range(N_WORKERS):
+            i_name = 'W_%i' % i   # worker name
+            workers.append(Worker(i_name, 10000+i, GLOBAL_AC))
 
-#     COORD = tf.train.Coordinator()
-#     SESS.run(tf.global_variables_initializer())
+    COORD = tf.train.Coordinator()
+    SESS.run(tf.global_variables_initializer())
 
-#     if OUTPUT_GRAPH:
-#         if os.path.exists(LOG_DIR):
-#             shutil.rmtree(LOG_DIR)
-#         tf.summary.FileWriter(LOG_DIR, SESS.graph)
+    if OUTPUT_GRAPH:
+        if os.path.exists(LOG_DIR):
+            shutil.rmtree(LOG_DIR)
+        tf.summary.FileWriter(LOG_DIR, SESS.graph)
 
-#     worker_threads = []
-#     for worker in workers:
-#         job = lambda: worker.work()
-#         t = threading.Thread(target=job)
-#         t.start()
-#         worker_threads.append(t)
-#     COORD.join(worker_threads)
+    workers[0].work()
+    # worker_threads = []
+    # for worker in workers:
+    #     job = lambda: worker.work()
+    #     t = threading.Thread(target=job)
+    #     t.start()
+    #     worker_threads.append(t)
+    # COORD.join(worker_threads)
 
-#     plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
-#     plt.xlabel('step')
-#     plt.ylabel('Total moving reward')
-#     plt.show()
+    # plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
+    # plt.xlabel('step')
+    # plt.ylabel('Total moving reward')
+    # plt.show()

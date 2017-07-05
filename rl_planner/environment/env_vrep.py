@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys, os
-sys.path.append("../v-rep_plugin") 
+sys.path.append("../../v-rep_plugin") 
 import numpy as np
 
 ## v-rep
@@ -8,8 +8,24 @@ import vrep
 
 import matplotlib.pyplot as plt
 
-from time import sleep
-import math
+action_list = []
+
+for a in range(-1, 2):
+    for b in range(-1, 2):
+        # for c in range(-1, 2):
+            # for d in range(-1, 2):
+            #     for e in range(-1, 2):
+        action = []
+        action.append(a)
+        action.append(b)
+        action.append(0)
+        action.append(0)
+        action.append(0)
+        # print action
+        action_list.append(action)
+        # print action_list
+
+# print action_list
 
 
 class Simu_env:
@@ -21,8 +37,10 @@ class Simu_env:
         # self.title('Vrep_env')
         self.port_num = port_num
         self.reached_index = -1
+        self.dist_pre = 100
         # self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
         # self.clientID = self._connect_vrep(port_num)
+
 
     def connect_vrep(self, close_all = False):
         if close_all:
@@ -73,22 +91,34 @@ class Simu_env:
         
         return path_dist, path_angle
 
+
+    def convert_state(self, laser_points, current_pose, path):
+        state = path[0]
+        state.extend(path[1])
+        # print state
+
+        return state
+
         
     def reset(self):
+        self.reached_index = -1
         res,retInts,retFloats,retStrings,retBuffer = self.call_sim_function('rwRobot', 'reset')
         return self.step([0,0,0,0,0])
 
     def step(self, action):
     #     print 'old index: ', self.reached_index
+        if len(action) == 1:
+            action = action_list[action[0]]
+
         is_finish = False
-        res,retInts,current_pose,retStrings,retBuffer = self.call_sim_function('rwRobot', 'step', action)
+        res,retInts,current_pose,retStrings,found_pose = self.call_sim_function('rwRobot', 'step', action)
         laser_points = self.get_laser_points()
         path_dist, path_angle = self.get_global_path()
         
     #     print path_dist
     #     print path_angle
 
-        reward, self.reached_index = self.compute_reward(action, path_dist)
+        reward, self.reached_index = self.compute_reward(action, path_dist, found_pose)
         
         if self.reached_index == len(path_dist)-1:
             is_finish = True
@@ -105,23 +135,33 @@ class Simu_env:
                 path_dist_in.append(path_dist[index])
                 path_angle_in.append(path_dist[index])
         
-        print path_dist_in
-        print path_angle_in
+        # print path_dist_in
+        # print path_angle_in
     # #     print 'befroe crop: ', len(path_dist)
     #     path_dist = path_dist[self.reached_index+1:]
     #     path_angle = path_angle[self.reached_index+1:]
     # #     print 'after crop: ', len(path_dist)
 
-        return laser_points, current_pose, [path_dist, path_angle], reward, self.reached_index, is_finish
+        state_ = self.convert_state(laser_points, current_pose, [path_dist_in, path_angle_in])
+
+        return state_, reward, is_finish, ''
 
     ########################################################################################################################################
 
     ###################################################  reward function ###################################################################
-    def compute_reward(self, action, path_dist):
+    def compute_reward(self, action, path_dist, found_pose):
         reward = -0.1 - np.sum(np.absolute(action))*0.1
         closest_index = np.argmin(path_dist)
-        if path_dist[closest_index] < 0.05 and self.reached_index < closest_index:
+        if path_dist[closest_index] < 0.15 and self.reached_index < closest_index:
             reward = reward + 1
             self.reached_index = closest_index
-        print closest_index, path_dist[closest_index]
+        # # print action, np.sum(np.absolute(action)), reward
+
+        # if path_dist[0] < self.dist_pre:
+        #     reward = reward + 1
+        # self.dist_pre = path_dist[0]
+
+        if found_pose == 'f':
+            reward = reward - 0.5
+
         return reward, self.reached_index
