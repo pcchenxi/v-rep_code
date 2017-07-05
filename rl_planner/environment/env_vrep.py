@@ -48,7 +48,7 @@ class Simu_env:
 
         clientID = vrep.simxStart('127.0.0.1',self.port_num,True,True,5000,5)
         if clientID != -1:
-            print 'Connected to remote API server with port: ', self.port_num
+            print 'Connected to remote API server with port: ', self.port_num, close_all
         else:
             print 'Failed connecting to remote API server'
 
@@ -69,6 +69,8 @@ class Simu_env:
         inputBuffer = bytearray()
         res,retInts,retFloats,retStrings,retBuffer = vrep.simxCallScriptFunction(self.clientID, object_name,vrep.sim_scripttype_childscript,
                     function_name, inputInts, inputFloats, inputStrings,inputBuffer, vrep.simx_opmode_blocking)
+
+        # print 'function call: ', self.clientID
 
         return res, retInts, retFloats, retStrings, retBuffer
         
@@ -120,13 +122,14 @@ class Simu_env:
 
         reward, self.reached_index = self.compute_reward(action, path_dist, found_pose)
         
-        if self.reached_index == len(path_dist)-1:
+        if self.reached_index > len(path_dist)-2:
             is_finish = True
             reward = reward + 10
         
         path_dist_in = []
         path_angle_in = []
-        for i in range(5):
+        
+        for i in range(2):
             index = self.reached_index+1+i
             if index > len(path_dist) - 1:
                 path_dist_in.append(0)

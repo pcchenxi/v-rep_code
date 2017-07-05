@@ -18,8 +18,9 @@ GAME = 'CartPole-v0'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
 # N_WORKERS = multiprocessing.cpu_count()
-N_WORKERS = 1
-MAX_GLOBAL_EP = 10
+N_WORKERS = 4
+MAX_GLOBAL_EP = 1000
+MAX_STEP_IN_EP = 50
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 20
 GAMMA = 0.9
@@ -34,7 +35,7 @@ env = gym.make(GAME)
 # N_S = env.observation_space.shape[0]
 # N_A = env.action_space.n
 
-N_S = 10
+N_S = 4
 N_A = 9 #243
 
 class ACNet(object):
@@ -82,7 +83,7 @@ class ACNet(object):
     def _build_net(self):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='la')
             a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
             l_c = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
@@ -107,8 +108,12 @@ class Worker(object):
     def __init__(self, name, prot_num, globalAC):
         # self.env = gym.make(GAME).unwrapped
         self.env = env_vrep.Simu_env(prot_num)
-        self.env.connect_vrep()
         self.name = name
+        if self.name == 'W_0':
+            self.env.connect_vrep(True)
+        else:
+            self.env.connect_vrep()
+
         self.AC = ACNet(name, globalAC)
 
     def work(self):
@@ -120,18 +125,22 @@ class Worker(object):
             # s = self.env.reset()        
             s, r, done, info = self.env.reset()
             ep_r = 0
+            step_in_ep = 0
             while True:
                 # if self.name == 'W_0':
                 #     self.env.render()
                 a = self.AC.choose_action(s)
-                print a
                 s_, r, done, info = self.env.step([a])
-                print 'action: ', a
-                print 'state: ', s_
-                print 'reward: ', r
-                print 'done: ', done
 
-                if done: r = -5
+                if self.name == 'W_0':
+                    print 'action: ', a
+                    print 'state: ', s_
+                    print 'reward: ', r
+                    print 'done: ', done
+
+                # if done: 
+                #     r = -5 
+                
                 ep_r += r
                 buffer_s.append(s)
                 buffer_a.append(a)
@@ -162,7 +171,8 @@ class Worker(object):
 
                 s = s_
                 total_step += 1
-                if done:
+                step_in_ep += 1
+                if done or step_in_ep > MAX_STEP_IN_EP:
                     if len(GLOBAL_RUNNING_R) == 0:  # record running episode reward
                         GLOBAL_RUNNING_R.append(ep_r)
                     else:
@@ -196,14 +206,15 @@ if __name__ == "__main__":
             shutil.rmtree(LOG_DIR)
         tf.summary.FileWriter(LOG_DIR, SESS.graph)
 
-    workers[0].work()
-    # worker_threads = []
-    # for worker in workers:
-    #     job = lambda: worker.work()
-    #     t = threading.Thread(target=job)
-    #     t.start()
-    #     worker_threads.append(t)
-    # COORD.join(worker_threads)
+    # workers[0].work()
+    worker_threads = []
+    for worker in workers:
+        print worker.name
+        job = lambda: worker.work()
+        t = threading.Thread(target=job)
+        t.start()
+        worker_threads.append(t)
+    COORD.join(worker_threads)
 
     # plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
     # plt.xlabel('step')

@@ -37,7 +37,7 @@ function generate_path()
     init_params(1, 0, 'robot_base', 'obstacles_tall', false, false)
     task_hd, state_dim = init_task('base_yaw','task_1')
     path = compute_path(task_hd, 10)
-    displayInfo('finish 1 '..#path)
+    -- displayInfo('finish 1 '..#path)
     -- applyPath(task_hd, path, 0.1)
     simExtOMPL_destroyTask(task_hd)
 
