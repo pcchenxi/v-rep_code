@@ -13,14 +13,16 @@ sys.path.append("../environment")
 
 import env_vrep
 
+MAX_STEP_IN_EP = 100
+MAX_STEP_NO_R = 1000000
 
 GAME = 'CartPole-v0'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
 # N_WORKERS = multiprocessing.cpu_count()
 N_WORKERS = 4
-MAX_GLOBAL_EP = 1000
-MAX_STEP_IN_EP = 50
+MAX_GLOBAL_EP = 5000
+
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 20
 GAMMA = 0.9
@@ -35,7 +37,7 @@ env = gym.make(GAME)
 # N_S = env.observation_space.shape[0]
 # N_A = env.action_space.n
 
-N_S = 4
+N_S = (env_vrep.STATE_SIZE) * 2
 N_A = 9 #243
 
 class ACNet(object):
@@ -82,12 +84,18 @@ class ACNet(object):
 
     def _build_net(self):
         w_init = tf.random_normal_initializer(0., .1)
+        with tf.variable_scope('feature'):
+            l_a = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lf')
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='la')
             a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
+            
+            # l_a = tf.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            # a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
+            v = tf.layers.dense(l_a, 1, kernel_initializer=w_init, name='v')  # state value
+            
+            # l_c = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            # v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
         return a_prob, v
 
     def update_global(self, feed_dict):  # run by a local
@@ -99,6 +107,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         s = np.asarray(s)
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
+        # print prob_weights
         action = np.random.choice(range(prob_weights.shape[1]),
                                   p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
@@ -120,23 +129,36 @@ class Worker(object):
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print 'in work function '
         total_step = 1
+        step_no_r = 1
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
             # s = self.env.reset()        
             s, r, done, info = self.env.reset()
             ep_r = 0
-            step_in_ep = 0
+            step_in_ep = 1
+            step_no_r = 1
+            # buffer_s, buffer_a, buffer_r = [], [], []
             while True:
                 # if self.name == 'W_0':
                 #     self.env.render()
                 a = self.AC.choose_action(s)
                 s_, r, done, info = self.env.step([a])
 
-                if self.name == 'W_0':
-                    print 'action: ', a
-                    print 'state: ', s_
-                    print 'reward: ', r
-                    print 'done: ', done
+                if done: r = 10
+                # if step_in_ep == MAX_STEP_IN_EP or step_no_r == MAX_STEP_NO_R: 
+                #     r = -10
+
+                # if r > 0:
+                #     step_no_r = 0
+                #     print 'reward: ', r
+                # else:
+                #     step_no_r += 1
+
+                # if self.name == 'W_0':
+                #     print 'action: ', a
+                # print 'state: ', s
+                # print 'reward: ', r
+                #     print 'done: ', done
 
                 # if done: 
                 #     r = -5 
@@ -170,15 +192,16 @@ class Worker(object):
                     self.AC.pull_global()
 
                 s = s_
-                total_step += 1
+                # total_step += 1
                 step_in_ep += 1
-                if done or step_in_ep > MAX_STEP_IN_EP:
+                if done or step_in_ep > MAX_STEP_IN_EP or step_no_r > MAX_STEP_NO_R:
                     if len(GLOBAL_RUNNING_R) == 0:  # record running episode reward
-                        GLOBAL_RUNNING_R.append(ep_r)
+                        GLOBAL_RUNNING_R.append(ep_r/step_in_ep)
                     else:
-                        GLOBAL_RUNNING_R.append(0.99 * GLOBAL_RUNNING_R[-1] + 0.01 * ep_r)
+                        GLOBAL_RUNNING_R.append(0.99 * GLOBAL_RUNNING_R[-1] + 0.01 * ep_r/step_in_ep)
                     print(
                         self.name,
+                        ep_r/step_in_ep,
                         "Ep:", GLOBAL_EP,
                         "| Ep_r: %i" % GLOBAL_RUNNING_R[-1],
                           )
@@ -216,7 +239,7 @@ if __name__ == "__main__":
         worker_threads.append(t)
     COORD.join(worker_threads)
 
-    # plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
-    # plt.xlabel('step')
-    # plt.ylabel('Total moving reward')
-    # plt.show()
+    plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
+    plt.xlabel('step')
+    plt.ylabel('Total moving reward')
+    plt.show()
