@@ -39,7 +39,9 @@ class Simu_env:
         self.port_num = port_num
         self.reached_index = -1
         self.dist_pre = 100
+        
         self.state_size = 3
+        self.action_size = 9
         # self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
         # self.clientID = self._connect_vrep(port_num)
 
@@ -103,7 +105,8 @@ class Simu_env:
     def reset(self):
         self.reached_index = -1
         res,retInts,retFloats,retStrings,retBuffer = self.call_sim_function('rwRobot', 'reset')
-        return self.step([0,0,0,0,0])
+        state, reward, is_finish, info = self.step([0,0,0,0,0])
+        return state
 
     def step(self, action):
     #     print 'old index: ', self.reached_index

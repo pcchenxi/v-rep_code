@@ -133,7 +133,7 @@ class Worker(object):
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
             # s = self.env.reset()        
-            s, r, done, info = self.env.reset()
+            s = self.env.reset()
             ep_r = 0
             step_in_ep = 1
             step_no_r = 1
