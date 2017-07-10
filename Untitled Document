@@ -1,0 +1,33 @@
+
+roslaunch centauro_gazebo centauro_world.launch legs:=false
+#click play Tutori
+
+CommunicationHandler /home/xi/workspace/advr-superbuild/external/XBotDaysWorkshop/configs/centauro/configs/config_centauro.yaml 
+XBotGUI /home/xi/workspace/advr-superbuild/external/XBotDaysWorkshop/configs/centauro/configs/config_centauro.yaml
+
+#set home position without GUI
+rosservice call /HomingExample_switch 1
+
+
+-----------------------------------------------------------------------
+# cd external
+# create plugin skeleton
+# inside XBotDaysWorkshop/XBotDaysPlugin
+generate_XBot_Plugin.sh TutorialPlugin
+
+#add plugin to XBotDayWorkshop Cmakelist.txt
+add_subdirectory(XBotDaysPlugin) add_subdirectory(TutorialPlugin)
+
+# goto config folder
+# XBotDayWorkshop/configs/centauro/configs/config_centauro.yaml
+# add tutorialplugin in "XBotRTPlugins"
+plugins: ["HomingExample", "XBotDaysPlugin", "TutorialPlugin"]
+
+# in build
+make XBotDayWorkshop
+
+# predefined position is inside the SRDF file
+
+
+
+

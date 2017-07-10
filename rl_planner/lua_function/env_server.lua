@@ -96,7 +96,7 @@ function transform_path_to_robotf(path_d_list, robot_hd)
         local angle_thigh = math.atan(d_pos[2]/d_pos[1])
 
         path_in_robotf[#path_in_robotf + 1] = dist
-        path_in_robotf[#path_in_robotf + 1] = angle_thigh * 180/math.pi
+        path_in_robotf[#path_in_robotf + 1] = angle_thigh
     end
 
     return path_in_robotf
@@ -163,11 +163,11 @@ path_dummy_list = {}
 
 start_joints = {}
 
-x_range = 4
-x_shift = -2
+x_range = 3
+x_shift = -1.5
 
-y_range = 4
-y_shift = -2
+y_range = 3
+y_shift = -1.5
 
 robot_body_hd = simGetCollectionHandle('robot_body')
 obstacle_hd = simGetCollectionHandle('obstacles')

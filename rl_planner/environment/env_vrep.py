@@ -9,7 +9,6 @@ import vrep
 import matplotlib.pyplot as plt
 
 action_list = []
-STATE_SIZE = 1
 
 for a in range(-1, 2):
     for b in range(-1, 2):
@@ -40,7 +39,8 @@ class Simu_env:
         self.reached_index = -1
         self.dist_pre = 100
         
-        self.state_size = 3
+        self.path_used = 1
+        self.state_size = self.path_used * 2
         self.action_size = 9
         # self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
         # self.clientID = self._connect_vrep(port_num)
@@ -131,32 +131,40 @@ class Simu_env:
 
 
         path_f = []
-        for i in range(STATE_SIZE):
-            # index = self.reached_index+1+i
-            index = len(path_dist) - 1
-            if index > len(path_dist) - 1:
-                sub_path = [0, 0]
-                path_f.append(sub_path)
-            else:
-                sub_path = [path_dist[index], path_angle[index]]
-                path_f.append(sub_path)
+        # for i in range(self.path_used):
+        #     # index = self.reached_index+1+i
+        #     index = len(path_dist) - 1
+        #     if index > len(path_dist) - 1:
+        #         sub_path = [0, 0]
+        #         path_f.append(sub_path)
+        #     else:
+        #         sub_path = [path_dist[index], path_angle[index]]
+        #         path_f.append(sub_path)
 
-        # sub_path = [path_dist[-1], path_angle[-1]]
-        # path_f.append(sub_path)
+        sub_path = [path_dist[self.reached_index+1], path_angle[self.reached_index+1]]
+        path_f.append(sub_path)
         state_ = self.convert_state(laser_points, current_pose, path_f)
 
 
 ###################################################################
         if path_f[0][0] < self.dist_pre:
-            reward = 1
+            reward = -path_f[0][0]
         else:
-            reward = -5
+            reward = -path_f[0][0] -5
 
         self.dist_pre = path_f[0][0]
         # reward = -path_f[0][0]
-        if path_f[0] < 0.1:
+        if path_f[0][0] < 0.2:
+            # is_finish = True
+            reward = -path_f[0][0] +5
+            self.reached_index += 1
+            self.dist_pre = path_dist[self.reached_index+1]
+        
+        if self.reached_index == len(path_dist) - 2:
             is_finish = True
+            reward = 10
 
+        print 'dist to T: ', path_f[0][0], 'reward: ', reward
         return state_, reward, is_finish, ''
 
     ########################################################################################################################################

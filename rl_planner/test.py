@@ -1,8 +1,9 @@
 
 import numpy as np
 
-a = np.ones((1,3,2), dtype=int)
+a = [1, 2, 3, [4,5,6]]
+b = [4, 5, 6]
 
-b = a[np.newaxis, :]
-print a
-print b
+c = np.append(a, b, axis=0)
+
+print c
