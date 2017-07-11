@@ -141,30 +141,37 @@ class Simu_env:
         #         sub_path = [path_dist[index], path_angle[index]]
         #         path_f.append(sub_path)
 
-        sub_path = [path_dist[self.reached_index+1], path_angle[self.reached_index+1]]
+        sub_path = [path_dist[-1], path_angle[-1]]
         path_f.append(sub_path)
         state_ = self.convert_state(laser_points, current_pose, path_f)
 
 
 ###################################################################
         if path_f[0][0] < self.dist_pre:
-            reward = -path_f[0][0]
+            reward = 1
         else:
-            reward = -path_f[0][0] -5
+            reward = -1
 
         self.dist_pre = path_f[0][0]
         # reward = -path_f[0][0]
-        if path_f[0][0] < 0.2:
-            # is_finish = True
-            reward = -path_f[0][0] +5
-            self.reached_index += 1
-            self.dist_pre = path_dist[self.reached_index+1]
-        
-        if self.reached_index == len(path_dist) - 2:
+        if path_f[0][0] < 0.3:
             is_finish = True
-            reward = 10
+            reward = 5
+            # self.reached_index += 1
+            # self.dist_pre = path_dist[self.reached_index+1]
 
-        print 'dist to T: ', path_f[0][0], 'reward: ', reward
+        if path_f[0][0] > 3:
+            is_finish = True
+            reward = -5
+
+        if found_pose == 'f':
+            is_finish = True
+            reward = -5
+        # if self.reached_index == len(path_dist) - 2:
+        #     is_finish = True
+        #     reward = 10
+
+        # print 'dist to T: ', path_f[0][0], 'reward: ', reward
         return state_, reward, is_finish, ''
 
     ########################################################################################################################################

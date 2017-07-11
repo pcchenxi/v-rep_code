@@ -1,6 +1,8 @@
 import numpy as np
 # import pandas as pd
 import tensorflow as tf
+import pickle
+
 
 class DeepQNetwork:
     def __init__(
@@ -45,7 +47,8 @@ class DeepQNetwork:
         if output_graph:
             # $ tensorboard --logdir=logs
             # tf.train.SummaryWriter soon be deprecated, use following
-            tf.summary.FileWriter("logs/", self.sess.graph)
+            self.writer = tf.summary.FileWriter("logs/", self.sess.graph)
+            self.merge_op = tf.summary.merge_all()                      
 
         self.sess.run(tf.global_variables_initializer())
         self.cost_his = []
@@ -93,8 +96,10 @@ class DeepQNetwork:
         # build loss operator 
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_a, name='TD_error'))
+            tf.summary.scalar('loss', self.loss)     # add loss to scalar summary
         with tf.variable_scope('train'):
             self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+
 
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
@@ -104,11 +109,12 @@ class DeepQNetwork:
             # forward feed the observation and get q value for every actions
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             action = np.argmax(actions_value)
-            print 'self.epsilon: ', self.epsilon, ' Net ', 'action: ', action
+            print actions_value[0]
+            # print 'self.epsilon: ', self.epsilon, ' Net ', 'action: ', action
 
         else:
             action = np.random.randint(0, self.action_size)
-            print 'self.epsilon: ', self.epsilon, ' Rand ', 'action: ', action
+            # print 'self.epsilon: ', self.epsilon, ' Rand ', 'action: ', action
 
         
         return action
@@ -137,6 +143,13 @@ class DeepQNetwork:
         index = self.memory_counter % self.memory_size
         self.memory[index, :] = transition
         self.memory_counter += 1
+
+        with open('/home/xi/workspace/data/data2.txt','a') as f_handle:
+            np.savetxt(f_handle,transition)
+            f_handle.write('\n')
+
+        # np.savetxt('/home/xi/workspace/data/data.txt', transition) 
+
 
     def _replace_target_params(self):
         t_params = tf.get_collection('target_net_params')
@@ -181,10 +194,8 @@ class DeepQNetwork:
         batch_memory = self.memory_n[sample_index, :]
 
 
-
-
-        _, cost = self.sess.run(
-            [self._train_op, self.loss],
+        _, cost, result = self.sess.run(
+            [self._train_op, self.loss, self.merge_op],
             feed_dict={
                 self.s: batch_memory[:, :self.state_size],
                 self.a: batch_memory[:, self.state_size],
@@ -192,6 +203,17 @@ class DeepQNetwork:
                 self.s_: batch_memory[:, -self.state_size:],
             })
 
+        # qtarget, qeval = self.sess.run(
+        #     [self.q_target, self.q_eval_a],
+        #     feed_dict={
+        #         self.s: batch_memory[:, :self.state_size],
+        #         self.a: batch_memory[:, self.state_size],
+        #         self.r: batch_memory[:, self.state_size + 1],
+        #         self.s_: batch_memory[:, -self.state_size:],
+        #     })
+        # print qtarget, qeval
+
+        self.writer.add_summary(result, self.learn_step_counter)
         self.cost_his.append(cost)
 
         # increasing epsilon

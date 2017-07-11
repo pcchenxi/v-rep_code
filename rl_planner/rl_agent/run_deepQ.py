@@ -14,11 +14,11 @@ total_step = 0
 RL = DeepQNetwork(env.action_size, env.state_size,
                     learning_rate=0.005,
                     reward_decay=0.9,
-                    e_greedy=0.9,
-                    replace_target_iter=100,
+                    e_greedy=0.8,
+                    replace_target_iter=50,
                     memory_size=2000,
-                    e_greedy_increment = 0.001,
-                    # output_graph=True
+                    # e_greedy_increment = 0.001,
+                    output_graph=True
                     )
 
 def run_one_ep():
@@ -31,18 +31,21 @@ def run_one_ep():
     while True:
         # RL choose action based on observation
         action = RL.choose_action(observation) 
-        print 'state: ', observation
         # RL take action and get next observation and reward
         observation_, reward, done, info = env.step([action])
 
         # if reward > 0:
         RL.store_transition(observation, action, reward, observation_) 
 
-        if (total_step > 100) and (total_step % 5 == 0):
+        if (total_step > 10) and (total_step % 10 == 0):
             RL.learn() 
+        elif done:
+            RL.learn() 
+            
 
         # swap observation
         observation = observation_
+        print 'state: ', observation, 'action: ', action, 'reward: ', reward
 
         # break while loop when end of this episode
         if done or ep_no_r > 50 or ep_step > 300:
