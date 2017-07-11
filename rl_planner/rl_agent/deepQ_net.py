@@ -164,8 +164,7 @@ class DeepQNetwork:
         # # check to replace target parameters
         # if self.learn_step_counter % self.replace_target_iter == 0:
         #     self._replace_target_params()
-        #     print('\ntarget_params_replaced\n')
-
+        #     print('\ntarget_params_repla
         # # sample batch memory from all memory
         # if self.memory_counter_n > self.memory_size:
         #     sample_index_n = np.random.choice(self.memory_size, size=self.batch_size)
