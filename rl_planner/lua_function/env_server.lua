@@ -92,11 +92,13 @@ function transform_path_to_robotf(path_d_list, robot_hd)
         local d_hd = path_d_list[i]
         local d_pos = simGetObjectPosition(d_hd, robot_hd)
 
-        local dist = math.sqrt(d_pos[1]*d_pos[1] + d_pos[2]*d_pos[2])
-        local angle_thigh = math.atan(d_pos[2]/d_pos[1])
+        -- local dist = math.sqrt(d_pos[1]*d_pos[1] + d_pos[2]*d_pos[2])
+        -- local angle_thigh = math.atan(d_pos[2]/d_pos[1])
 
-        path_in_robotf[#path_in_robotf + 1] = dist
-        path_in_robotf[#path_in_robotf + 1] = angle_thigh
+        -- path_in_robotf[#path_in_robotf + 1] = dist
+        -- path_in_robotf[#path_in_robotf + 1] = angle_thigh
+        path_in_robotf[#path_in_robotf + 1] = d_pos[1]
+        path_in_robotf[#path_in_robotf + 1] = d_pos[2]
     end
 
     return path_in_robotf
@@ -105,8 +107,10 @@ end
 function sample_init()
     -- sample start robot position
     local robot_pos = {}
-    robot_pos[1] = math.random() * x_range + x_shift
-    robot_pos[2] = math.random() * y_range + y_shift
+    -- robot_pos[1] = math.random() * x_range + x_shift
+    -- robot_pos[2] = math.random() * y_range + y_shift
+    robot_pos[1] = 0
+    robot_pos[2] = 0
     robot_pos[3] = start_pos[3]
     print ('robot location: ', robot_pos[1], robot_pos[2])
 
@@ -117,6 +121,9 @@ function sample_init()
     local target_pos = {}
     target_pos[1] = math.random() * x_range + x_shift
     target_pos[2] = math.random() * y_range + y_shift
+    -- local dist_to_start = 0.3
+    -- target_pos[1] = 0 + robot_pos[1]
+    -- target_pos[2] = 0.5 + robot_pos[2]
     target_pos[3] = 0
     print ('target location: ', target_pos[1], target_pos[2])
 
@@ -133,8 +140,8 @@ function sample_init()
     simSetObjectPosition(target_hd,-1,target_pos)
 
     -- check collision for robot pose --
-    local res_robot = simCheckCollision(robot_body_hd, obstacle_hd)
-    local res_target = simCheckCollision(target_hd, obstacle_hd)
+    local res_robot = simCheckCollision(robot_body_hd, obstacle_all_hd)
+    local res_target = simCheckCollision(target_hd, obstacle_all_hd)
 
     print (res_robot, res_target)
 
@@ -171,6 +178,7 @@ y_shift = -1.5
 
 robot_body_hd = simGetCollectionHandle('robot_body')
 obstacle_hd = simGetCollectionHandle('obstacles')
+obstacle_all_hd = simGetCollectionHandle('obstacle_all')
 
 target_hd = simGetObjectHandle('target')
 robot_hd = simGetObjectHandle('rwRobot')

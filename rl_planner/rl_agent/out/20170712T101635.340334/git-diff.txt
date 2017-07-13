@@ -1,0 +1,185 @@
+diff --git a/rl_planner/environment/env_vrep.py b/rl_planner/environment/env_vrep.py
+index 2efb893..4d80466 100755
+--- a/rl_planner/environment/env_vrep.py
++++ b/rl_planner/environment/env_vrep.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python
+-import sys, os
++import sys, os, math
+ sys.path.append("../../v-rep_plugin") 
+ import numpy as np
+ 
+@@ -145,22 +145,23 @@ class Simu_env:
+         path_f.append(sub_path)
+         state_ = self.convert_state(laser_points, current_pose, path_f)
+ 
+-
++        dist = math.sqrt(path_dist[-1]*path_dist[-1] + path_angle[-1]*path_angle[-1])
++        print 'dist: ', dist
+ ###################################################################
+-        if path_f[0][0] < self.dist_pre:
+-            reward = 1
+-        else:
+-            reward = -1
++        # if dist < self.dist_pre:
++        #     reward = 1
++        # else:
++        #     reward = -1
+ 
+-        self.dist_pre = path_f[0][0]
++        self.dist_pre = dist
+         # reward = -path_f[0][0]
+-        if path_f[0][0] < 0.3:
++        if dist < 0.1:
+             is_finish = True
+             reward = 5
+             # self.reached_index += 1
+             # self.dist_pre = path_dist[self.reached_index+1]
+ 
+-        if path_f[0][0] > 3:
++        if dist > 0.5:
+             is_finish = True
+             reward = -5
+ 
+@@ -172,6 +173,7 @@ class Simu_env:
+         #     reward = 10
+ 
+         # print 'dist to T: ', path_f[0][0], 'reward: ', reward
++        reward -= 1
+         return state_, reward, is_finish, ''
+ 
+     ########################################################################################################################################
+diff --git a/rl_planner/environment/env_vrep.pyc b/rl_planner/environment/env_vrep.pyc
+index a9b0746..d524581 100644
+Binary files a/rl_planner/environment/env_vrep.pyc and b/rl_planner/environment/env_vrep.pyc differ
+diff --git a/rl_planner/lua_function/env_server.lua b/rl_planner/lua_function/env_server.lua
+index 18f584c..5695672 100644
+--- a/rl_planner/lua_function/env_server.lua
++++ b/rl_planner/lua_function/env_server.lua
+@@ -92,11 +92,13 @@ function transform_path_to_robotf(path_d_list, robot_hd)
+         local d_hd = path_d_list[i]
+         local d_pos = simGetObjectPosition(d_hd, robot_hd)
+ 
+-        local dist = math.sqrt(d_pos[1]*d_pos[1] + d_pos[2]*d_pos[2])
+-        local angle_thigh = math.atan(d_pos[2]/d_pos[1])
++        -- local dist = math.sqrt(d_pos[1]*d_pos[1] + d_pos[2]*d_pos[2])
++        -- local angle_thigh = math.atan(d_pos[2]/d_pos[1])
+ 
+-        path_in_robotf[#path_in_robotf + 1] = dist
+-        path_in_robotf[#path_in_robotf + 1] = angle_thigh
++        -- path_in_robotf[#path_in_robotf + 1] = dist
++        -- path_in_robotf[#path_in_robotf + 1] = angle_thigh
++        path_in_robotf[#path_in_robotf + 1] = d_pos[1]
++        path_in_robotf[#path_in_robotf + 1] = d_pos[2]
+     end
+ 
+     return path_in_robotf
+@@ -115,8 +117,11 @@ function sample_init()
+ 
+     -- sample target position
+     local target_pos = {}
+-    target_pos[1] = math.random() * x_range + x_shift
+-    target_pos[2] = math.random() * y_range + y_shift
++    -- target_pos[1] = math.random() * x_range + x_shift
++    -- target_pos[2] = math.random() * y_range + y_shift
++    local dist_to_start = 0.5
++    target_pos[1] = math.random() * dist_to_start + robot_pos[1]
++    target_pos[2] = math.random() * dist_to_start + robot_pos[2]
+     target_pos[3] = 0
+     print ('target location: ', target_pos[1], target_pos[2])
+ 
+diff --git a/rl_planner/rl_agent/run_deepQ_chainerrl.py b/rl_planner/rl_agent/run_deepQ_chainerrl.py
+index d5cbf00..7c2d6d6 100755
+--- a/rl_planner/rl_agent/run_deepQ_chainerrl.py
++++ b/rl_planner/rl_agent/run_deepQ_chainerrl.py
+@@ -4,11 +4,15 @@ import chainer.links as L
+ import chainerrl
+ import numpy as np
+ 
++import time
++
+ import sys, os
+ sys.path.append("../environment") 
+ 
+ import env_vrep
+ 
++file_name = time.time()
++
+ # init simu environment
+ env = env_vrep.Simu_env(10000)
+ env.connect_vrep(True)
+@@ -39,25 +43,27 @@ def sample_action():
+ 
+ obs_size = env.state_size
+ n_actions = env.action_size
+-q_func = QFunction(obs_size, n_actions)
++# q_func = QFunction(obs_size, n_actions)
+ 
+ # Uncomment to use CUDA
+ # q_func.to_gpu(0)
+ 
+ _q_func = chainerrl.q_functions.FCStateQFunctionWithDiscreteAction(
+     obs_size, n_actions,
+-    n_hidden_layers=2, n_hidden_channels=50)
++    n_hidden_layers=1, n_hidden_channels=10)
+ 
+ # Use Adam to optimize q_func. eps=1e-2 is for stability.
+ optimizer = chainer.optimizers.Adam(eps=1e-2)
+-optimizer.setup(q_func)
++optimizer.setup(_q_func)
+ 
+ # Set the discount factor that discounts future rewards.
+ gamma = 0.95
+ 
+ # Use epsilon-greedy for exploration
+-explorer = chainerrl.explorers.ConstantEpsilonGreedy(
+-    epsilon=0.3, random_action_func=sample_action)
++# explorer = chainerrl.explorers.ConstantEpsilonGreedy(
++#     epsilon=0.7, random_action_func=sample_action)
++explorer = chainerrl.explorers.LinearDecayEpsilonGreedy(
++    start_epsilon = 1, end_epsilon = 0.2, decay_steps = 3000, random_action_func=sample_action)
+ 
+ # DQN uses Experience Replay.
+ # Specify a replay buffer and its capacity.
+@@ -69,13 +75,17 @@ replay_buffer = chainerrl.replay_buffer.ReplayBuffer(capacity=10 ** 6)
+ phi = lambda x: x.astype(np.float32, copy=False)
+ 
+ # Now create an agent that will interact with the environment.
+-agent = chainerrl.agents.DoubleDQN(
+-    q_func, optimizer, replay_buffer, gamma, explorer,
++agent = chainerrl.agents.DQN(
++    _q_func, optimizer, replay_buffer, gamma, explorer,
+     replay_start_size=500, update_interval=1,
+     target_update_interval=100, phi=phi)
+ 
+ n_episodes = 2000
+ max_episode_len = 200
++
++# chainer.serializers.load_npz("model/1499816810.8.model", _q_func)
++# chainer.serializers.save_npz("model/1499816810.8optmizer.model", optimizer)
++
+ for i in range(1, n_episodes + 1):
+     obs = env.reset()
+     reward = 0
+@@ -89,10 +99,17 @@ for i in range(1, n_episodes + 1):
+         obs, reward, done, _ = env.step([action])
+         R += reward
+         t += 1
+-    if i % 10 == 0:
+-        print('episode:', i,
+-              'R:', R,
+-              'statistics:', agent.get_statistics())
++        print obs, action, reward
++        if t % 10 == 0:
++            chainer.serializers.save_npz("model/" + str(file_name) + ".model", _q_func)
++            chainer.serializers.save_npz("model/" + str(file_name) + "optmizer.model", optimizer)
++
++    # if i % 10 == 0:
++    print('episode:', i,
++            'R:', R,
++            'statistics:', agent.get_statistics())
++    if i % 100 == 0:
++        file_name = time.time()
+     agent.stop_episode_and_train(obs, reward, done)
+ print('Finished.')
+ 

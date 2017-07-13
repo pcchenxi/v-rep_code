@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os
+import sys, os, math
 sys.path.append("../../v-rep_plugin") 
 import numpy as np
 
@@ -16,9 +16,9 @@ for a in range(-1, 2):
             # for d in range(-1, 2):
             #     for e in range(-1, 2):
         action = []
-        action.append(0)
-        action.append(b)
         action.append(a)
+        action.append(b)
+        action.append(0)
         action.append(0)
         action.append(0)
         # print action
@@ -40,7 +40,7 @@ class Simu_env:
         self.dist_pre = 100
         
         self.path_used = 1
-        self.state_size = self.path_used * 2
+        self.state_size = 182
         self.action_size = 9
         # self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
         # self.clientID = self._connect_vrep(port_num)
@@ -95,10 +95,13 @@ class Simu_env:
 
 
     def convert_state(self, laser_points, current_pose, path):
-        state = np.asarray(path)
-        state = state.flatten()
-        # print state
+        path = np.asarray(path)
+        laser_points = np.asarray(laser_points)
+        state = np.append(path, laser_points)
 
+        # state = np.asarray(path)
+        # state = state.flatten()
+        # print 'state', len(state)
         return state
 
         
@@ -118,6 +121,7 @@ class Simu_env:
 
         res,retInts,current_pose,retStrings,found_pose = self.call_sim_function('rwRobot', 'step', action)
         laser_points = self.get_laser_points()
+
         path_dist, path_angle = self.get_global_path()
         
         #compute reward
@@ -145,33 +149,36 @@ class Simu_env:
         path_f.append(sub_path)
         state_ = self.convert_state(laser_points, current_pose, path_f)
 
-
+        dist = math.sqrt(path_dist[-1]*path_dist[-1] + path_angle[-1]*path_angle[-1])
+        # dist = path_dist[-1]
+        # print 'dist: ', dist
 ###################################################################
-        if path_f[0][0] < self.dist_pre:
+        if dist < self.dist_pre:
             reward = 1
         else:
             reward = -1
 
-        self.dist_pre = path_f[0][0]
+        self.dist_pre = dist
         # reward = -path_f[0][0]
-        if path_f[0][0] < 0.3:
+        if dist < 0.1:
             is_finish = True
             reward = 5
             # self.reached_index += 1
             # self.dist_pre = path_dist[self.reached_index+1]
 
-        if path_f[0][0] > 3:
+        if dist > 6:
             is_finish = True
-            reward = -5
+            reward = -1
 
         if found_pose == 'f':
-            is_finish = True
-            reward = -5
+            # is_finish = True
+            reward = -10
         # if self.reached_index == len(path_dist) - 2:
         #     is_finish = True
         #     reward = 10
 
         # print 'dist to T: ', path_f[0][0], 'reward: ', reward
+        reward -= 1
         return state_, reward, is_finish, ''
 
     ########################################################################################################################################

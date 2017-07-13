@@ -4,10 +4,14 @@ import chainer.links as L
 import chainerrl
 import numpy as np
 
+import time
+
 import sys, os
 sys.path.append("../environment") 
 
 import env_vrep
+
+file_name = time.time()
 
 # init simu environment
 env = env_vrep.Simu_env(10000)
@@ -18,8 +22,10 @@ class QFunction(chainer.Chain):
     def __init__(self, obs_size, n_actions, n_hidden_channels=50):
         super(QFunction, self).__init__(
             l0=L.Linear(obs_size, n_hidden_channels),
-            l1=L.Linear(n_hidden_channels, n_hidden_channels),
-            l2=L.Linear(n_hidden_channels, n_actions))
+            # l1=L.Linear(n_hidden_channels, n_hidden_channels),
+            # l2=L.Linear(n_hidden_channels, n_hidden_channels),
+            # l3=L.Linear(n_hidden_channels, n_hidden_channels),
+            l1=L.Linear(n_hidden_channels, n_actions))
 
     def __call__(self, x, test=False):
         """
@@ -27,9 +33,16 @@ class QFunction(chainer.Chain):
             x (ndarray or chainer.Variable): An observation
             test (bool): a flag indicating whether it is in test mode
         """
-        h = F.tanh(self.l0(x))
-        h = F.tanh(self.l1(h))
-        return chainerrl.action_value.DiscreteActionValue(self.l2(h))
+        h = F.relu(self.l0(x))
+        # h = F.relu(self.l1(h))
+        # h = F.relu(self.l2(h))
+        # h = F.relu(self.l3(h))
+
+        # h = F.tanh(self.l1(h))
+        # print x
+        # print self.l1(h)
+        # print chainerrl.action_value.DiscreteActionValue(self.l1(h))
+        return chainerrl.action_value.DiscreteActionValue(self.l1(h))
 
 def sample_action():
     # print 'in action'
@@ -44,9 +57,9 @@ q_func = QFunction(obs_size, n_actions)
 # Uncomment to use CUDA
 # q_func.to_gpu(0)
 
-_q_func = chainerrl.q_functions.FCStateQFunctionWithDiscreteAction(
-    obs_size, n_actions,
-    n_hidden_layers=2, n_hidden_channels=50)
+# _q_func = chainerrl.q_functions.FCStateQFunctionWithDiscreteAction(
+#     obs_size, n_actions,
+#     n_hidden_layers=1, n_hidden_channels=10)
 
 # Use Adam to optimize q_func. eps=1e-2 is for stability.
 optimizer = chainer.optimizers.Adam(eps=1e-2)
@@ -57,7 +70,9 @@ gamma = 0.95
 
 # Use epsilon-greedy for exploration
 explorer = chainerrl.explorers.ConstantEpsilonGreedy(
-    epsilon=0.3, random_action_func=sample_action)
+    epsilon=0.2, random_action_func=sample_action)
+# explorer = chainerrl.explorers.LinearDecayEpsilonGreedy(
+#     start_epsilon = 1, end_epsilon = 0.2, decay_steps = 3000, random_action_func=sample_action)
 
 # DQN uses Experience Replay.
 # Specify a replay buffer and its capacity.
@@ -69,13 +84,16 @@ replay_buffer = chainerrl.replay_buffer.ReplayBuffer(capacity=10 ** 6)
 phi = lambda x: x.astype(np.float32, copy=False)
 
 # Now create an agent that will interact with the environment.
-agent = chainerrl.agents.DoubleDQN(
+agent = chainerrl.agents.DQN(
     q_func, optimizer, replay_buffer, gamma, explorer,
-    replay_start_size=500, update_interval=1,
+    replay_start_size=40, update_interval=1,
     target_update_interval=100, phi=phi)
 
 n_episodes = 2000
 max_episode_len = 200
+
+# chainer.serializers.load_npz("model/xy.model", q_func)
+
 for i in range(1, n_episodes + 1):
     obs = env.reset()
     reward = 0
@@ -89,10 +107,19 @@ for i in range(1, n_episodes + 1):
         obs, reward, done, _ = env.step([action])
         R += reward
         t += 1
-    if i % 10 == 0:
-        print('episode:', i,
-              'R:', R,
-              'statistics:', agent.get_statistics())
+        print obs, action, reward
+        o = obs.reshape(1, -1)
+        o = o.astype(np.float32, copy=False)
+        print q_func(o)
+        if t % 10 == 0:
+            chainer.serializers.save_npz("model/" + str(file_name) + ".model", q_func)
+
+    # if i % 10 == 0:
+    print('episode:', i,
+            'R:', R,
+            'statistics:', agent.get_statistics())
+    if i % 100 == 0:
+        file_name = time.time()
     agent.stop_episode_and_train(obs, reward, done)
 print('Finished.')
 

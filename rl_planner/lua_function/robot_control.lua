@@ -12,7 +12,7 @@ dh = step/3.0
 dl = step
 
 collision_hd_1 = simGetCollectionHandle('robot_body')
-collision_hd_2 = simGetCollectionHandle('obstacles')
+collision_hd_2 = simGetCollectionHandle('obstacle_all')
 
 
 function do_action(robot_hd, joint_hds, action)
@@ -36,6 +36,7 @@ function do_action(robot_hd, joint_hds, action)
     sample_ori[3] = current_ori[3] + dw*action[3] 
     sample_ori[4] = current_ori[4]
 
+    print (sample_ori[3])
     simSetObjectPosition(robot_hd,robot_hd,sample_pose)
     simSetObjectQuaternion(robot_hd,-1,sample_ori)
 

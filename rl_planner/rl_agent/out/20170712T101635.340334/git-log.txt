@@ -1,0 +1,203 @@
+commit f679720bb8a7298fed0f8857c1ae4f026040b97b
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue Jul 11 14:16:57 2017 +0200
+
+    chainerrl deepQ
+
+commit 41c3c43269418cebad69246558e93e070c2284e3
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue Jul 11 13:18:22 2017 +0200
+
+    add recorded data
+
+commit 8f06f341af7765f3833d9a6a816453a4cbebbb31
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue Jul 11 13:10:08 2017 +0200
+
+    dq
+
+commit 365babecfc8302f71fd551f124fb99d5e0713fe2
+Author: xi chen <xi8@kth.se>
+Date:   Mon Jul 10 17:29:43 2017 +0200
+
+    testing deep Q
+
+commit 59e614d475cfffa8dfb7f9d20cf90e81f6385ebf
+Author: Xi Chen <xi8@kth.se>
+Date:   Mon Jul 10 09:47:11 2017 +0200
+
+    implementing dQ
+
+commit 8db705de243669779fc6b6bf4324cac248911147
+Author: Xi Chen <xi8@kth.se>
+Date:   Fri Jul 7 00:02:15 2017 +0200
+
+    a3c exp
+
+commit 0a3de3f68d282afeebdf515596185bc2c766a623
+Author: Xi Chen <xi8@kth.se>
+Date:   Wed Jul 5 23:37:32 2017 +0200
+
+    4 core
+
+commit bfcd8f5c9af634e2205b5b53760d73e9eb76e086
+Author: xi chen <xi8@kth.se>
+Date:   Wed Jul 5 18:07:30 2017 +0200
+
+    a3c one core
+
+commit abdef5995509daee5d869d4d39833b6618410a57
+Author: xi chen <xi8@kth.se>
+Date:   Tue Jul 4 16:57:35 2017 +0200
+
+    change env as class type
+
+commit 665ed9d07598aa54a8565a251a78014be4d4b422
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue Jul 4 00:00:29 2017 +0200
+
+    finish init
+
+commit ad1af527258f4c091fd3859d4ba45bbbc67459c9
+Author: xi chen <xi8@kth.se>
+Date:   Mon Jul 3 16:14:47 2017 +0200
+
+    editing init
+
+commit fcd3a5414c8ac48ec4fc5fb37b6caf41a026074e
+Author: xi <xi8@kth.se>
+Date:   Tue Jun 27 01:04:12 2017 +0200
+
+    fix angle bug on model
+
+commit 4a0be3a1be9bd20b120557ed72007a89a79cdd41
+Author: Xi Chen <xi8@kth.se>
+Date:   Sun Jun 25 23:11:56 2017 +0200
+
+    add rl planner
+
+commit ea722b26fa23a0e12c231b3bc2bb720ed3e0956e
+Author: Xi Chen <xi8@kth.se>
+Date:   Fri Jun 2 00:41:20 2017 +0200
+
+    updated rl code
+
+commit cefb99ba7944f9a3489e5180ba1dd98626e7f798
+Author: Xi Chen <xi8@kth.se>
+Date:   Wed May 31 01:25:33 2017 +0200
+
+    add rl study folder
+
+commit 778b22c1ec5da78ce3b732800716d449d7b968aa
+Author: xi <xi8@kth.se>
+Date:   Tue May 16 17:39:19 2017 +0200
+
+    change demo scene
+
+commit e049ce43d6a0268d689eb858366839f0e493bb44
+Author: xi <xi8@kth.se>
+Date:   Tue May 16 16:01:17 2017 +0200
+
+    small change or video recording
+
+commit 7df08268e94fbda9fc317ad0070a911246745d1b
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue May 16 11:39:05 2017 +0200
+
+    allow pose2D
+
+commit 4e47ab830a26b78d6fb7bd1a28a7311a57897598
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue May 16 02:55:48 2017 +0200
+
+    add feet planner
+
+commit 46685692caed0122863bdc27ae954d3a62a20a95
+Author: xi <xi8@kth.se>
+Date:   Mon May 15 16:11:02 2017 +0200
+
+    start to edit sub-planner
+
+commit 61cbb7feb86291334e4aa728bcf3968afbb11f73
+Author: Xi Chen <xi8@kth.se>
+Date:   Sun May 14 22:22:21 2017 +0200
+
+    add pair matching
+
+commit bb168138eb97c77c41e177b0d610f87e89e78447
+Author: Xi Chen <xi8@kth.se>
+Date:   Fri May 12 01:50:21 2017 +0200
+
+    modify api, tried sample mid pose
+
+commit e1c029c662eec08313a36076765d264d25e3dc9c
+Author: Xi Chen <xi8@kth.se>
+Date:   Thu May 11 22:54:00 2017 +0200
+
+    add ompl motion validation api
+
+commit f4b764b835fc3732a5f1215e73e4951548ed8751
+Author: xi <xi8@kth.se>
+Date:   Thu May 11 18:39:16 2017 +0200
+
+    too much change..
+
+commit 03cd71d7a0b48d212d324c8b8dc40b59286131f9
+Author: Xi Chen <xi8@kth.se>
+Date:   Thu May 11 12:19:40 2017 +0200
+
+    search all candidate at one place
+
+commit b7ace53613d24ce457f4163405ff73545352c8a9
+Author: Xi Chen <xi8@kth.se>
+Date:   Thu May 11 10:33:41 2017 +0200
+
+    search all candidate at one place
+
+commit 09c6e2c44f1f9bd1b86c8d2441aa66307224eac4
+Author: Xi Chen <xi8@kth.se>
+Date:   Thu May 11 00:46:05 2017 +0200
+
+    ..
+
+commit 7b9d1d97a6a86a9f18f4b60574d9315dccc493a2
+Author: xi <xi8@kth.se>
+Date:   Wed May 10 16:31:28 2017 +0200
+
+    some change
+
+commit cbeb025809774a6f49d23acca3d7cbf5f66edf16
+Author: xi <xi8@kth.se>
+Date:   Wed May 10 16:25:10 2017 +0200
+
+    some change
+
+commit 1810c2e9e8ce6fd38d5356f5caf026f98f2ce7bf
+Author: xi <xi8@kth.se>
+Date:   Tue May 9 16:47:17 2017 +0200
+
+    finish pose list and environment generator v0.1
+
+commit 1c100fdf7f602b3b7d07c1e539f4ef4847f6a8cc
+Author: Xi Chen <xi8@kth.se>
+Date:   Tue May 9 01:49:08 2017 +0200
+
+    complete pose generator
+
+commit 2cb1bb996684d6c006ed831a2f1d1ed609f23cf5
+Author: xi <xi8@kth.se>
+Date:   Mon May 8 17:21:45 2017 +0200
+
+    reimplementing ompl_functions as class
+
+commit e707c9239b03cfbca529d4b8afc4eb85aa84b847
+Author: xi <xi8@kth.se>
+Date:   Mon May 8 14:09:04 2017 +0200
+
+    copy code
+
+commit bc03afe040094cea978a0a51ea248b7b693c466b
+Author: xi <xi8@kth.se>
+Date:   Mon May 8 14:06:38 2017 +0200
+
+    first commit
